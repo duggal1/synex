@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@/lib/prisma';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import dns from 'dns';
-import { CloudflareService } from './CloudflareService';
+import { CloudflareService } from '@/services/CloudflareService';
 
 const execAsync = promisify(exec);
 const dnsResolve = promisify(dns.resolve);
@@ -28,7 +29,7 @@ export class DomainService {
       }
 
       // Create domain record
-      const domain = await db.domain.create({
+      const domain = await prisma.domain.create({
         data: {
           domain: domainName,
           projectId,
@@ -44,8 +45,11 @@ export class DomainService {
       }
 
       return domain;
-    } catch (error) {
-      throw new Error(`Failed to add domain: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to add domain: ${error.message}`);
+      }
+      throw new Error('Failed to add domain: Unknown error');
     }
   }
 
@@ -54,7 +58,7 @@ export class DomainService {
     await this.generateSSL(domainName);
 
     // Create DNS records
-    await db.dnsRecord.createMany({
+    await prisma.dnsRecord.createMany({
       data: [
         {
           domainId,
@@ -80,8 +84,11 @@ export class DomainService {
       await execAsync(
         `certbot certonly --nginx -d ${domain} -d www.${domain} --non-interactive --agree-tos --email ${process.env.ADMIN_EMAIL}`
       );
-    } catch (error) {
-      throw new Error(`SSL generation failed: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(`SSL generation failed: ${error.message}`);
+      }
+      throw new Error('SSL generation failed: Unknown error');
     }
   }
 
@@ -154,7 +161,7 @@ export class DomainService {
   }
 
   private async checkDomainAvailability(domain: string): Promise<boolean> {
-    const existing = await db.domain.findFirst({
+    const existing = await prisma.domain.findFirst({
       where: { domain }
     });
     return !existing;

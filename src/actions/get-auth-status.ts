@@ -65,7 +65,7 @@ const getAuthStatus = async () => {
             },
         });
 
-        return { 
+        return {
             success: true,
             user: updatedUser
         };

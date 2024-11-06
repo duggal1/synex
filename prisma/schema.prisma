@@ -66,6 +66,9 @@ model Project {
 
   @@index([userId])
   @@index([status])
+
+  edgeFunctions EdgeFunction[]
+  storage ProjectStorage[]
 }
 
 model Domain {
@@ -186,6 +189,45 @@ model Analytics {
   @@index([date])
 }
 
+model EdgeFunction {
+  id          String        @id @default(cuid())
+  projectId   String
+  project     Project       @relation(fields: [projectId], references: [id])
+  name        String
+  route       String
+  runtime     String        // 'nodejs' | 'python' | 'rust'
+  memory      Int          @default(128)
+  timeout     Int          @default(5000)
+  version     String
+  code        String       @db.Text
+  
+  // Metrics
+  metrics     EdgeFunctionMetrics[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([projectId])
+}
+
+model EdgeFunctionMetrics {
+  id            String       @id @default(cuid())
+  functionId    String
+  function      EdgeFunction @relation(fields: [functionId], references: [id])
+  
+  // Metrics
+  invocations   Int         @default(0)
+  errors        Int         @default(0)
+  latency       Float       @default(0)
+  cpu           Float       @default(0)
+  memory        Int         @default(0)
+  
+  timestamp     DateTime     @default(now())
+
+  @@index([functionId])
+  @@index([timestamp])
+}
+
 enum SubscriptionStatus {
   FREE
   PRO
@@ -217,3 +259,18 @@ enum DomainType {
   SUBDOMAIN
   CUSTOM
 }
+//storage for project builds
+model ProjectStorage {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  fileName  String   @unique
+  hash      String
+  size      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([createdAt])
+}
+

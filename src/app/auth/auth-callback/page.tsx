@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { getAuthStatus } from "@/actions";
@@ -7,10 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-interface AuthStatus {
+type AuthResponse = {
     success: boolean;
     error?: string;
-}
+    user?: {
+        id: string;
+        email: string;
+        name: string;
+        image?: string;
+    };
+};
 
 export default function AuthCallbackPage() {
     const router = useRouter();
@@ -24,11 +29,15 @@ export default function AuthCallbackPage() {
         }
     }, [error, router]);
 
-    const { isError, isSuccess, data } = useQuery<AuthStatus, Error>({
+    const { isError, isSuccess, data } = useQuery<AuthResponse>({
         queryKey: ["auth-status"],
-        queryFn: getAuthStatus,
+        queryFn: async () => {
+            const response = await getAuthStatus();
+            return response as AuthResponse;
+        },
         retry: 3,
         retryDelay: 1000,
+        refetchInterval: 1000, // Poll every second until success
     });
 
     useEffect(() => {
@@ -37,7 +46,7 @@ export default function AuthCallbackPage() {
             router.push("/auth/sign-in");
         }
 
-        if (isSuccess) {
+        if (isSuccess && data) {
             if (data.success) {
                 router.push("/dashboard");
             } else {
