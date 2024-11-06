@@ -54,14 +54,15 @@ const HomePage = () => {
           className="w-full h-full"
           particleColor="#FFFFFF"
         />
-         <button className="relative z-20 grid bg-gradient-to-r from-[#FF3BFF] to-[#00D9F5] shadow-[#FF3BFF]/30 shadow-lg backdrop-blur-md px-8 py-3 border rounded-full overflow-hidden">
-                            <span className="z-10 flex justify-center items-center gap-2 py-0.5 font-medium text-neutral-50 text-sm tracking-wider">
-                                🚀 Unleash the Power of AI for Enterprises
-                                <ArrowRightIcon className="ml-1 size-4" />
+        <Link href="/dashboard">
+         <button className="relative z-20 grid bg-gradient-to-r from-[#0A0AFF] to-[#00F0FF] shadow-[#0A0AFF]/40 shadow-xl backdrop-blur-xl px-6 py-2.5 border-none rounded-full overflow-hidden">
+                            <span className="z-10 flex justify-center items-center gap-2 py-0.5 font-bold text-white text-xs uppercase tracking-[0.2em]">
+                                ⚡ Next-Gen Enterprise AI
+                                <ArrowRightIcon className="ml-1 size-3.5" />
                             </span>
-                            
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#6a65ff] to-[#5C24FF] opacity-30"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#000AFF] to-[#00CFFF] opacity-20"></div>
                         </button>
+                        </Link>
                         <h1 className="relative z-20 bg-clip-text bg-gradient-to-r from-[#1e40af] via-[#00D9F5] to-[#9945FF] [text-shadow:0_0_100px_rgba(30,64,175,0.5)] py-10 w-full font-bold font-heading text-6xl text-center text-transparent sm:text-7xl md:text-8xl lg:text-9xl !leading-[0.9] tracking-tighter animate-gradient-x">
                             Transform Your Business <br/>
                             <span className="bg-clip-text bg-gradient-to-r from-[#FF3BFF] via-[#ECBFBF] to-[#5C24FF] [text-shadow:0_0_100px_rgba(255,59,255,0.5)] text-transparent animate-gradient-y">
@@ -69,23 +70,23 @@ const HomePage = () => {
                             </span>
                         </h1>
                         
-                        <p className="relative z-20 mx-auto mb-14 max-w-3xl font-light text-neutral-100 text-xl md:text-2xl tracking-tight">
+                        <p className="relative z-20 bg-clip-text bg-gradient-to-r from-white/90 via-neutral-300/80 to-gray-500/60 mx-auto mb-14 max-w-3xl font-medium text-transparent text-xl md:text-2xl tracking-tight">
                             The Ultimate AI Business Intelligence Solution
                             <br className="md:block hidden" />
-                            <span className="md:block hidden bg-clip-text bg-gradient-to-r from-[#1e40af] to-[#9945FF] font-medium text-transparent">Revolutionize Your Data Management. Scale Your Enterprise. Dominate Your Market.</span>
+                            <span className="md:block hidden bg-clip-text bg-gradient-to-r from-[#4a4aff] via-[#7e15cf] to-[#37096f] font-medium text-transparent">Revolutionize Your Data Management. Scale Your Enterprise. Dominate Your Market.</span>
                         </p>
                         <div className="relative z-20 md:flex justify-center items-center hidden mt-8 md:mt-12 w-full">
-                            <Link href="/dashboard" className="relative flex justify-center items-center gap-4 border-[#1e40af]/20 bg-gradient-to-r from-[#1e40af]/10 via-[#00D9F5]/10 to-[#9945FF]/10 shadow-[0_0_35px_rgba(30,64,175,0.3)] hover:shadow-[0_0_50px_rgba(30,64,175,0.5)] backdrop-blur-2xl px-4 py-3 border rounded-full w-max transition-all duration-500 group hover:scale-105">
-                                <div className="absolute inset-0 bg-gradient-to-r from-[#1e40af]/20 via-[#00D9F5]/20 to-[#9945FF]/20 rounded-full"></div>
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#1e40af] via-[#00D9F5] to-[#9945FF] opacity-30 group-hover:opacity-50 blur rounded-full"></div>
-                                <p className="relative z-10 bg-clip-text bg-gradient-to-r from-white to-neutral-300 font-medium text-base text-transparent">
-                                    ✨ Elevate Your Business Instantly
+                            <Link href="/dashboard" className="relative flex justify-center items-center gap-6 bg-gradient-to-r from-[#1e40af] hover:from-[#682472] to-[#0e0868] hover:to-[#141d60] shadow-lg backdrop-blur-lg px-10 py-6 rounded-full transform transition-transform duration-300 hover:scale-105">
+                                <p className="font-semibold text-white text-xl tracking-wide">
+                                  ✨ Elevate Your Enterprise
                                 </p>
-                                <Button size="sm" className="relative z-10 bg-black hover:bg-gradient-to-r hover:from-[#1e40af] hover:via-[#00D9F5] hover:to-[#9945FF] shadow-lg hover:shadow-xl hover:shadow-[#1e40af]/30 border-none rounded-full text-white">
-                                    <span className="font-medium">Get Started Now</span>
-                                    <ArrowRight className="ml-2 w-4 h-4" />
+                                <Button size="lg" className="bg-white shadow-xl px-8 py-4 rounded-full text-white">
+                                    <span className="font-bold">Get Started Now⚡️ </span>
+                                    <ArrowRight className="ml-2 w-6 h-6" />
                                 </Button>
-                            </Link>
+                                </Link>
+           
+             
                         </div>
                     </AnimationContainer>
                     <AnimationContainer delay={0.2} className="relative bg-transparent px-2 md:py-40 pt-28 pb-24 w-full">
