@@ -3,22 +3,24 @@ import { Activity, BarChart3, DollarSign, Users, ArrowUpRight, ArrowDownRight, B
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
+
 const DashboardPage = () => {
   return (
+  
     <div className="flex flex-col gap-8 p-8">
       {/* Header Section */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Welcome back, Administrator</p>
+          <h1 className="font-bold text-4xl">Dashboard</h1>
+          <p className="mt-2 text-muted-foreground">Welcome back, Administrator</p>
         </div>
-        <Button className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
+        <Button className="bg-gradient-to-r from-indigo-500 hover:from-indigo-600 to-purple-500 hover:to-purple-600">
           Generate Report
         </Button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {[
           {
             title: "Total Revenue",
@@ -51,18 +53,18 @@ const DashboardPage = () => {
         ].map((stat, index) => (
           <Card key={index} className="relative overflow-hidden">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <div className="bg-primary/10 p-3 rounded-lg">
                   <stat.icon className="w-6 h-6 text-primary" />
                 </div>
                 <span className={`flex items-center text-sm ${stat.positive ? 'text-green-500' : 'text-red-500'}`}>
                   {stat.change}
-                  {stat.positive ? <ArrowUpRight className="w-4 h-4 ml-1" /> : <ArrowDownRight className="w-4 h-4 ml-1" />}
+                  {stat.positive ? <ArrowUpRight className="ml-1 w-4 h-4" /> : <ArrowDownRight className="ml-1 w-4 h-4" />}
                 </span>
               </div>
               <div className="mt-4">
-                <p className="text-3xl font-bold">{stat.value}</p>
-                <p className="text-muted-foreground mt-1">{stat.title}</p>
+                <p className="font-bold text-3xl">{stat.value}</p>
+                <p className="mt-1 text-muted-foreground">{stat.title}</p>
               </div>
             </CardContent>
           </Card>
@@ -70,7 +72,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+      <div className="gap-6 grid grid-cols-1 lg:grid-cols-6">
         {/* Activity Chart */}
         <Card className="lg:col-span-4">
           <CardHeader>
@@ -78,7 +80,7 @@ const DashboardPage = () => {
             <CardDescription>System activity for the last 30 days</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[350px] flex items-center justify-center border border-dashed rounded-lg">
+            <div className="flex justify-center items-center border border-dashed rounded-lg h-[350px]">
               [Activity Chart Placeholder]
             </div>
           </CardContent>
@@ -118,11 +120,11 @@ const DashboardPage = () => {
                   </div>
                   <div className="flex-1 space-y-1">
                     <p className="font-medium">{activity.title}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {activity.description}
                     </p>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3 mr-1" />
+                    <div className="flex items-center text-muted-foreground text-xs">
+                      <Clock className="mr-1 w-3 h-3" />
                       {activity.time}
                     </div>
                   </div>
@@ -170,7 +172,7 @@ const DashboardPage = () => {
                 { name: "Memory Usage", value: "68%", status: "warning" },
                 { name: "Storage", value: "23%", status: "normal" },
               ].map((metric, index) => (
-                <div key={index} className="flex items-center justify-between">
+                <div key={index} className="flex justify-between items-center">
                   <span className="font-medium">{metric.name}</span>
                   <span className={`px-3 py-1 rounded-full text-sm ${
                     metric.status === "normal" 
@@ -186,6 +188,7 @@ const DashboardPage = () => {
         </Card>
       </div>
     </div>
+  
   );
 };
 

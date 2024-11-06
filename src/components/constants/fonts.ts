@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Inter, DM_Sans, Roboto, Poppins } from "next/font/google";
 import localFont from "next/font/local";
 

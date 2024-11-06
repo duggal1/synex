@@ -81,28 +81,6 @@ html, body {
   font-family: "Inter", sans-serif !important;
 }
 
-button, .button {
-  background: linear-gradient(135deg, #0f172a, #1e40af, #4f46e5, #7c3aed, #2563eb, #3b82f6);
-  background-size: 300% 300%;
-  animation: gradient 12s ease infinite;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 
-    0 4px 15px rgba(0, 0, 0, 0.3),
-    0 0 30px rgba(59, 130, 246, 0.1),
-    inset 0 0 1px rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-button:hover, .button:hover {
-  background-size: 150% 150%;
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(99, 102, 241, 0.4),
-    0 0 50px rgba(59, 130, 246, 0.2),
-    inset 0 0 2px rgba(255, 255, 255, 0.3);
-}
 
 @keyframes gradient {
   0% { background-position: 0% 50% }
