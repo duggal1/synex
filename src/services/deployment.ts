@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Project, Deployment } from '@prisma/client';
 import Docker from 'dockerode';
 import path from 'path';
