@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  clerkId       String?   @unique
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  apiKey        String    @unique @default(uuid())
+  
+  // Subscription and billing
+  subscriptionId    String?
+  subscriptionStatus SubscriptionStatus @default(FREE)
+  usageLimit        Int                @default(10) // Number of projects allowed
+  
+  // Resources
+  projects          Project[]
+  domains           Domain[]
+  deployments       Deployment[]
+  analytics         Analytics[]
+  
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([subscriptionStatus])
+}
+
+model Project {
+  id              String       @id @default(cuid())
+  name            String
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  
+  // Project configuration
+  framework       Framework     @default(NEXTJS)
+  nodeVersion     String       @default("18.x")
+  buildCommand    String       @default("npm run build")
+  startCommand    String       @default("npm start")
+  rootDirectory   String       @default("./")
+  
+  // Deployment and domains
+  domains         Domain[]
+  deployments     Deployment[]
+  environments    Environment[]
+  
+  // Build settings
+  buildCache      Boolean      @default(true)
+  automaticDeploys Boolean     @default(true)
+  
+  // Performance
+  cdn            Boolean       @default(true)
+  analytics      Analytics[]
+  
+  // Status and metadata
+  status         ProjectStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Domain {
+  id           String        @id @default(cuid())
+  domain       String        @unique
+  projectId    String
+  project      Project       @relation(fields: [projectId], references: [id])
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  
+  // Domain configuration
+  type         DomainType    @default(SUBDOMAIN)
+  ssl          Boolean       @default(true)
+  verified     Boolean       @default(false)
+  
+  // DNS records
+  dnsRecords   DnsRecord[]
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Deployment {
+  id           String           @id @default(cuid())
+  projectId    String
+  project      Project          @relation(fields: [projectId], references: [id])
+  userId       String
+  user         User             @relation(fields: [userId], references: [id])
+  
+  // Deployment details
+  version      String
+  commitHash   String?
+  branch       String           @default("main")
+  environment  Environment      @relation(fields: [environmentId], references: [id])
+  environmentId String
+  
+  // Build information
+  buildLogs    Json
+  buildTime    Int              @default(0) // in seconds
+  status       DeploymentStatus @default(QUEUED)
+  
+  // Container info
+  containerId  String?
+  containerPort Int?
+  
+  // Metrics
+  memory       Int              @default(0) // in MB
+  cpu          Float            @default(0) // percentage
+  
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model Environment {
+  id           String        @id @default(cuid())
+  name         String        // e.g., "production", "staging"
+  projectId    String
+  project      Project       @relation(fields: [projectId], references: [id])
+  
+  // Environment configuration
+  variables    EnvVariable[]
+  deployments  Deployment[]
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([projectId, name])
+}
+
+model EnvVariable {
+  id            String      @id @default(cuid())
+  key           String
+  value         String
+  environmentId String
+  environment   Environment @relation(fields: [environmentId], references: [id])
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([environmentId, key])
+}
+
+model DnsRecord {
+  id        String     @id @default(cuid())
+  domainId  String
+  domain    Domain     @relation(fields: [domainId], references: [id])
+  type      String     // A, CNAME, TXT, etc.
+  name      String
+  content   String
+  ttl       Int        @default(3600)
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Analytics {
+  id        String     @id @default(cuid())
+  projectId String
+  project   Project    @relation(fields: [projectId], references: [id])
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  
+  // Metrics
+  requests  Int        @default(0)
+  bandwidth Int        @default(0) // in bytes
+  compute   Int        @default(0) // in seconds
+  
+  date      DateTime   @default(now())
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([date])
+}
+
+enum SubscriptionStatus {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+  SUSPENDED
+}
+
+enum DeploymentStatus {
+  QUEUED
+  BUILDING
+  DEPLOYING
+  DEPLOYED
+  FAILED
+  CANCELLED
+}
+
+enum Framework {
+  NEXTJS
+  REMIX
+  ASTRO
+}
+
+enum DomainType {
+  SUBDOMAIN
+  CUSTOM
+}
