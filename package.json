@@ -51,6 +51,7 @@
     "tailwind-scrollbar-hide": "^1.1.7",
     "tailwindcss-animate": "^1.0.7",
     "terser": "^5.36.0",
+    "util": "^0.12.5",
     "uuid": "^11.0.2",
     "winston": "^3.16.0"
   },

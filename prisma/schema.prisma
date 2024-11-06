@@ -61,6 +61,8 @@ model Project {
   
   // Status and metadata
   status         ProjectStatus @default(ACTIVE)
+  optimizationStatus String?
+  lastOptimized      DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -69,6 +71,8 @@ model Project {
 
   edgeFunctions EdgeFunction[]
   storage ProjectStorage[]
+  config ProjectConfig?
+  files ProjectFile[]
 }
 
 model Domain {
@@ -228,6 +232,26 @@ model EdgeFunctionMetrics {
   @@index([timestamp])
 }
 
+model ProjectConfig {
+  id              String  @id @default(cuid())
+  projectId       String  @unique
+  project         Project @relation(fields: [projectId], references: [id])
+  renderingConfig Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ProjectFile {
+  projectId String
+  filename  String
+  content   String @db.Text
+  project   Project @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([projectId, filename])
+}
+
 enum SubscriptionStatus {
   FREE
   PRO
@@ -259,6 +283,7 @@ enum DomainType {
   SUBDOMAIN
   CUSTOM
 }
+
 //storage for project builds
 model ProjectStorage {
   id        String   @id @default(cuid())
@@ -273,4 +298,3 @@ model ProjectStorage {
   @@index([projectId])
   @@index([createdAt])
 }
-
