@@ -3,7 +3,7 @@ import { DockerService } from './DockerService';
 import { DomainService } from './DomainService';
 import { StorageService } from './StorageService';
 import { BuildService } from './BuildService';
-import { ProjectConfig, DeploymentStatus, BuildConfig } from '@/types';
+import { ProjectConfig, DeploymentStatus, BuildConfig } from '@/types/index';
 import { logger } from '@/lib/logger';
 
 export class DeploymentService {

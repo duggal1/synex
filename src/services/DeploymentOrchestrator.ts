@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { BuildPipeline } from './BuildPipeline';
 import { ContainerManager } from './ContainerManager';
 import { DomainService } from './DomainService';
-import { Framework, DeploymentStatus } from '@/types';
+import { Framework, DeploymentStatus } from '@/types/index';
 import { logger } from '@/lib/logger';
 
 export class DeploymentOrchestrator {

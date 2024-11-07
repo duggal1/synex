@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { BuildConfig, Framework, BuildResult } from '@/types';
+import { BuildConfig, Framework, BuildResult } from '@/types/index';
 
 
 const execAsync = promisify(exec);

@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from '@/lib/prisma';
 import { Redis } from 'ioredis';
 import { MetricsCollector } from '@/lib/metrics';
 import { logger } from '@/lib/logger';
+import { Request, Response } from 'express';
 
 interface MetricData {
   cpu: number;
@@ -12,12 +15,41 @@ interface MetricData {
   bandwidth: number;
 }
 
+interface RequestMetrics {
+  path: string;
+  method: string;
+  timestamp: Date;
+  userAgent: string | null;
+  ip: string | null;
+  country: string | null;
+}
+
+interface ResponseMetrics {
+  responseTime: number;
+  status: number;
+  size: number;
+}
+
+interface BuildLog {
+  level: string;
+  message: string;
+  timestamp: Date;
+}
+
+interface TimePeriods {
+  '1h': number;
+  '24h': number;
+  '7d': number;
+  '30d': number;
+  [key: string]: number;
+}
+
 export class AnalyticsService {
   private redis: Redis;
   private metricsCollector: MetricsCollector;
 
   constructor() {
-    this.redis = new Redis(process.env.REDIS_URL);
+    this.redis = new Redis(process.env.REDIS_URL!);
     this.metricsCollector = new MetricsCollector();
   }
 
@@ -40,32 +72,28 @@ export class AnalyticsService {
     }
   }
 
-  async trackRequest(projectId: string, req: Request, res: Response) {
+  async trackRequest(projectId: string, req: Request, res: Response): Promise<void> {
     const startTime = process.hrtime();
     
     try {
-      // Track request metrics
-      const metrics = {
-        path: req.url,
+      const metrics: RequestMetrics = {
+        path: req.path || req.url,
         method: req.method,
         timestamp: new Date(),
-        userAgent: req.headers['user-agent'],
-        ip: req.ip,
-        country: req.headers['cf-ipcountry'],
+        userAgent: req.headers['user-agent'] || null,
+        ip: req.ip || req.socket.remoteAddress || null,
+        country: req.headers['cf-ipcountry'] as string || null,
       };
 
-      // Store request metrics
       await this.storeRequestMetrics(projectId, metrics);
 
-      // Track response time
       const [seconds, nanoseconds] = process.hrtime(startTime);
       const responseTime = seconds * 1000 + nanoseconds / 1000000;
 
-      // Update response metrics
       await this.updateResponseMetrics(projectId, {
         responseTime,
         status: res.statusCode,
-        size: parseInt(res.getHeader('content-length') as string || '0'),
+        size: parseInt(res.get('content-length') || '0'),
       });
 
     } catch (error) {
@@ -73,18 +101,63 @@ export class AnalyticsService {
     }
   }
 
+  private async storeRequestMetrics(projectId: string, metrics: RequestMetrics): Promise<void> {
+    await prisma.analytics.create({
+      data: {
+        projectId,
+        type: 'REQUEST',
+        metrics,
+        timestamp: new Date()
+      }
+    });
+
+    // Update request count in cache
+    const cacheKey = `metrics:requests:${projectId}`;
+    await this.redis.incr(cacheKey);
+  }
+
+  private async updateResponseMetrics(projectId: string, metrics: ResponseMetrics): Promise<void> {
+    await prisma.analytics.create({
+      data: {
+        projectId,
+        type: 'RESPONSE',
+        metrics,
+        timestamp: new Date()
+      }
+    });
+
+    // Update response time stats in cache
+    const cacheKey = `metrics:response:${projectId}`;
+    await this.redis.lpush(cacheKey, metrics.responseTime);
+    await this.redis.ltrim(cacheKey, 0, 999); // Keep last 1000 response times
+  }
+
   private async collectBuildMetrics(deploymentId: string) {
     const deployment = await prisma.deployment.findUnique({
       where: { id: deploymentId },
-      include: { buildLogs: true }
+      select: {
+        buildTime: true,
+        status: true,
+        memory: true,
+        cpu: true,
+        logs: {
+          where: {
+            level: 'ERROR'
+          }
+        }
+      }
     });
+
+    if (!deployment) {
+      throw new Error(`Deployment ${deploymentId} not found`);
+    }
 
     return {
       duration: deployment.buildTime,
       success: deployment.status === 'DEPLOYED',
       memory: deployment.memory,
       cpu: deployment.cpu,
-      errors: deployment.buildLogs.filter(log => log.level === 'ERROR').length
+      errors: deployment.logs?.length || 0
     };
   }
 
@@ -152,7 +225,7 @@ export class AnalyticsService {
         projectId,
         deploymentId,
         type: 'REALTIME',
-        metrics: metrics,
+        metrics: JSON.stringify(metrics),
         timestamp: new Date()
       }
     });
@@ -177,7 +250,7 @@ export class AnalyticsService {
   }
 
   private getPeriodInMs(period: string): number {
-    const periods = {
+    const periods: TimePeriods = {
       '1h': 60 * 60 * 1000,
       '24h': 24 * 60 * 60 * 1000,
       '7d': 7 * 24 * 60 * 60 * 1000,
@@ -217,5 +290,49 @@ export class AnalyticsService {
     const sorted = values.sort((a, b) => a - b);
     const index = Math.ceil((percentile / 100) * sorted.length) - 1;
     return sorted[index];
+  }
+
+  private async getRequestCount(deploymentId: string): Promise<number> {
+    const cacheKey = `metrics:requests:${deploymentId}`;
+    const count = await this.redis.get(cacheKey);
+    return parseInt(count || '0');
+  }
+
+  private async getAverageResponseTime(deploymentId: string): Promise<number> {
+    const cacheKey = `metrics:response:${deploymentId}`;
+    const times = await this.redis.lrange(cacheKey, 0, -1);
+    if (!times.length) return 0;
+    
+    const sum = times.reduce((acc, time) => acc + parseFloat(time), 0);
+    return sum / times.length;
+  }
+
+  private async getErrorCount(deploymentId: string): Promise<number> {
+    const cacheKey = `metrics:errors:${deploymentId}`;
+    const count = await this.redis.get(cacheKey);
+    return parseInt(count || '0');
+  }
+
+  async trackResourceUsage(projectId: string, deploymentId: string): Promise<void> {
+    try {
+      const stats = await this.metricsCollector.getContainerStats(deploymentId);
+      
+      await prisma.analytics.create({
+        data: {
+          projectId,
+          deploymentId,
+          type: 'RESOURCE',
+          metrics: {
+            cpu: stats.cpu_stats.cpu_usage.total_usage,
+            memory: stats.memory_stats.usage,
+            networkIn: stats.networks?.eth0?.rx_bytes || 0,
+            networkOut: stats.networks?.eth0?.tx_bytes || 0
+          },
+          timestamp: new Date()
+        }
+      });
+    } catch (error) {
+      logger.error('Resource usage tracking failed:', error);
+    }
   }
 } 

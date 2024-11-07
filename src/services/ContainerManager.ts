@@ -1,5 +1,5 @@
 import Docker from 'dockerode';
-import { Framework } from '@/types';
+import { Framework } from '@/types/index';
 import { logger } from '@/lib/logger';
 import path from 'path';
 

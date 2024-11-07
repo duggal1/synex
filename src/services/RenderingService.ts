@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@/lib/prisma';
-import { Framework } from '@/types';
+import { Framework } from '@/types/index';
 import { logger } from '@/lib/logger';
 
 // Configuration interfaces for each framework

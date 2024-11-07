@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@/lib/prisma';
-import { Framework } from '@/types';
+import { Framework } from '@/types/index';
 import path from 'path';
 import fs from 'fs-extra';
 import { exec } from 'child_process';

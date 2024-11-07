@@ -50,7 +50,7 @@ export class DeploymentService {
         cpu: 0, // Example CPU usage
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as Deployment;
+      } as unknown as Deployment;
     } catch (error) {
       if (error instanceof Error) {
         console.error(`Deployment failed: ${error.message}`);

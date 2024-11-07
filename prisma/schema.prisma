@@ -15,144 +15,145 @@ model User {
   emailVerified DateTime?
   image         String?
   apiKey        String    @unique @default(uuid())
-  
+
   // Subscription and billing
-  subscriptionId    String?
+  subscriptionId     String?
   subscriptionStatus SubscriptionStatus @default(FREE)
-  usageLimit        Int                @default(10) // Number of projects allowed
-  
+  usageLimit         Int                @default(10) // Number of projects allowed
+
   // Resources
-  projects          Project[]
-  domains           Domain[]
-  deployments       Deployment[]
-  analytics         Analytics[]
-  
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  projects    Project[]
+  domains     Domain[]
+  deployments Deployment[]
+  analytics   Analytics[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([subscriptionStatus])
 }
 
 model Project {
-  id              String       @id @default(cuid())
-  name            String
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  
+  id     String @id @default(cuid())
+  name   String
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
   // Project configuration
-  framework       Framework     @default(NEXTJS)
-  nodeVersion     String       @default("18.x")
-  buildCommand    String       @default("npm run build")
-  startCommand    String       @default("npm start")
-  rootDirectory   String       @default("./")
-  
+  framework     Framework @default(NEXTJS)
+  nodeVersion   String    @default("18.x")
+  buildCommand  String    @default("npm run build")
+  startCommand  String    @default("npm start")
+  rootDirectory String    @default("./")
+
   // Deployment and domains
-  domains         Domain[]
-  deployments     Deployment[]
-  environments    Environment[]
-  
+  domains      Domain[]
+  deployments  Deployment[]
+  environments Environment[]
+
   // Build settings
-  buildCache      Boolean      @default(true)
-  automaticDeploys Boolean     @default(true)
-  
+  buildCache       Boolean @default(true)
+  automaticDeploys Boolean @default(true)
+
   // Performance
-  cdn            Boolean       @default(true)
-  analytics      Analytics[]
-  
+  cdn       Boolean     @default(true)
+  analytics Analytics[]
+
   // Status and metadata
-  status         ProjectStatus @default(ACTIVE)
+  status             ProjectStatus @default(ACTIVE)
   optimizationStatus String?
   lastOptimized      DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   productionDeploymentId String?
 
   edgeFunctions EdgeFunction[]
-  storage ProjectStorage[]
-  config ProjectConfig?
-  files ProjectFile[]
-  cacheHeaders Json?
+  storage       ProjectStorage[]
+  config        ProjectConfig?
+  files         ProjectFile[]
+  cacheHeaders  Json?
 
   @@index([userId])
   @@index([status])
 }
 
 model Domain {
-  id           String        @id @default(cuid())
-  domain       String        @unique
-  projectId    String
-  project      Project       @relation(fields: [projectId], references: [id])
-  userId       String
-  user         User          @relation(fields: [userId], references: [id])
-  
+  id        String  @id @default(cuid())
+  domain    String  @unique
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
   // Domain configuration
-  type         DomainType    @default(SUBDOMAIN)
-  ssl          Boolean       @default(true)
-  verified     Boolean       @default(false)
-  
+  type     DomainType @default(SUBDOMAIN)
+  ssl      Boolean    @default(true)
+  verified Boolean    @default(false)
+
   // DNS records
-  dnsRecords   DnsRecord[]
-  
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now())
+  dnsRecords DnsRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
   @@index([projectId])
   @@index([userId])
 }
 
 model Deployment {
-  id           String           @id @default(cuid())
-  projectId    String
-  project      Project          @relation(fields: [projectId], references: [id])
-  userId       String
-  user         User             @relation(fields: [userId], references: [id])
-  
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
   // Deployment details
-  buildCommand String
-  nodeVersion  String
-  version      String
-  commitHash   String?
-  branch       String           @default("main")
-  environment  Environment      @relation(fields: [environmentId], references: [id])
+  buildCommand  String
+  nodeVersion   String
+  version       String
+  commitHash    String?
+  branch        String      @default("main")
+  environment   Environment @relation(fields: [environmentId], references: [id])
   environmentId String
-  
+
   // Build information
-  buildLogs    Json
-  buildTime    Int              @default(0) // in seconds
-  status       DeploymentStatus @default(QUEUED)
-  
+  buildLogs Json
+  buildTime Int              @default(0) // in seconds
+  status    DeploymentStatus @default(QUEUED)
+
   // Container info
-  containerId  String?
+  containerId   String?
   containerPort Int?
-  
+
   // Metrics
-  memory       Int              @default(0) // in MB
-  cpu          Float            @default(0) // percentage
-  
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @default(now())
+  memory Int   @default(0) // in MB
+  cpu    Float @default(0) // percentage
 
-  metrics      Metrics[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
-  url         String?
+  metrics   Metrics[]
+  analytics Analytics[]
+
+  url String?
 
   @@index([projectId])
   @@index([status])
 }
 
 model Environment {
-  id           String        @id @default(cuid())
-  name         String        // e.g., "production", "staging"
-  projectId    String
-  project      Project       @relation(fields: [projectId], references: [id])
-  
+  id        String  @id @default(cuid())
+  name      String // e.g., "production", "staging"
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
   // Environment configuration
-  variables    EnvVariable[]
-  deployments  Deployment[]
-  
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now())
+  variables   EnvVariable[]
+  deployments Deployment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
   @@unique([projectId, name])
 }
@@ -163,89 +164,90 @@ model EnvVariable {
   value         String
   environmentId String
   environment   Environment @relation(fields: [environmentId], references: [id])
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
   @@unique([environmentId, key])
 }
 
 model DnsRecord {
-  id        String     @id @default(cuid())
-  domainId  String
-  domain    Domain     @relation(fields: [domainId], references: [id])
-  type      String     // A, CNAME, TXT, etc.
-  name      String
-  content   String
-  ttl       Int        @default(3600)
-  
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now())
+  id       String @id @default(cuid())
+  domainId String
+  domain   Domain @relation(fields: [domainId], references: [id])
+  type     String // A, CNAME, TXT, etc.
+  name     String
+  content  String
+  ttl      Int    @default(3600)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 }
 
 model Analytics {
-  id        String     @id @default(cuid())
-  type      String
-  projectId String
-  project   Project    @relation(fields: [projectId], references: [id])
-  userId    String
-  user      User       @relation(fields: [userId], references: [id])
-  
-  // Metrics
-  requests  Int        @default(0)
-  bandwidth Int        @default(0) // in bytes
-  compute   Int        @default(0) // in seconds
-  
-  date      DateTime   @default(now())
+  id           String      @id @default(cuid())
+  projectId    String
+  project      Project     @relation(fields: [projectId], references: [id])
+  deploymentId String?
+  deployment   Deployment? @relation(fields: [deploymentId], references: [id])
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+
+  // Analytics data
+  type      String // 'REQUEST', 'RESPONSE', 'BUILD', 'RESOURCE', 'REALTIME'
+  metrics   Json
+  timestamp DateTime @default(now())
 
   @@index([projectId])
+  @@index([deploymentId])
   @@index([userId])
-  @@index([date])
+  @@index([timestamp])
+  @@index([type])
 }
 
 model EdgeFunction {
-  id          String        @id @default(cuid())
-  projectId   String
-  project     Project       @relation(fields: [projectId], references: [id])
-  name        String
-  route       String
-  runtime     String        // 'nodejs' | 'python' | 'rust'
-  memory      Int          @default(128)
-  timeout     Int          @default(5000)
-  version     String
-  code        String       @db.Text
-  
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  name      String
+  route     String
+  runtime   String // 'nodejs' | 'python' | 'rust'
+  memory    Int     @default(128)
+  timeout   Int     @default(5000)
+  version   String
+  code      String  @db.Text
+
   // Metrics
-  metrics     EdgeFunctionMetrics[]
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @default(now())
+  metrics EdgeFunctionMetrics[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 
   @@index([projectId])
 }
 
 model EdgeFunctionMetrics {
-  id            String       @id @default(cuid())
-  functionId    String
-  function      EdgeFunction @relation(fields: [functionId], references: [id])
-  
+  id         String       @id @default(cuid())
+  functionId String
+  function   EdgeFunction @relation(fields: [functionId], references: [id])
+
   // Metrics
-  invocations   Int         @default(0)
-  errors        Int         @default(0)
-  latency       Float       @default(0)
-  cpu           Float       @default(0)
-  memory        Int         @default(0)
-  
-  timestamp     DateTime     @default(now())
+  invocations Int   @default(0)
+  errors      Int   @default(0)
+  latency     Float @default(0)
+  cpu         Float @default(0)
+  memory      Int   @default(0)
+
+  timestamp DateTime @default(now())
 
   @@index([functionId])
   @@index([timestamp])
 }
 
 model ProjectConfig {
-  id              String  @id @default(cuid())
-  projectId       String  @unique
-  project         Project @relation(fields: [projectId], references: [id])
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  project         Project  @relation(fields: [projectId], references: [id])
   renderingConfig Json
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now())
@@ -254,8 +256,8 @@ model ProjectConfig {
 model ProjectFile {
   projectId String
   filename  String
-  content   String @db.Text
-  project   Project @relation(fields: [projectId], references: [id])
+  content   String   @db.Text
+  project   Project  @relation(fields: [projectId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
 
@@ -310,24 +312,22 @@ model ProjectStorage {
 }
 
 model Metrics {
-  id            String    @id @default(cuid())
-  deploymentId  String
-  deployment    Deployment @relation(fields: [deploymentId], references: [id])
-  
+  id           String     @id @default(cuid())
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id])
+
   // Container metrics
-  cpu           Float     @default(0)
-  memory        Int      @default(0)
-  requests      Int      @default(0)
-  responseTime  Float    @default(0)
-  
+  cpu          Float @default(0)
+  memory       Int   @default(0)
+  requests     Int   @default(0)
+  responseTime Float @default(0)
+
   // Additional metrics
-  errorRate     Float    @default(0)
-  throughput    Int      @default(0)
-  
-  timestamp     DateTime  @default(now())
+  errorRate  Float @default(0)
+  throughput Int   @default(0)
+
+  timestamp DateTime @default(now())
 
   @@index([deploymentId])
   @@index([timestamp])
 }
-
-

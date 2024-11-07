@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Redis } from 'ioredis';
 import { prisma } from '@/lib/prisma';
-import { Framework } from '@/types';
+import { Framework } from '@/types/index';
 import { logger } from '@/lib/logger';
 import { createHash } from 'crypto';
 import { CloudflareClient } from '@/lib/cloudflare';
