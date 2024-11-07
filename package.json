@@ -45,6 +45,7 @@
     "radix-ui": "^1.0.1",
     "react": "19.0.0-rc-02c0e824-20241028",
     "react-dom": "19.0.0-rc-02c0e824-20241028",
+    "react-hot-toast": "^2.4.1",
     "sonner": "^1.7.0",
     "stream": "^0.0.3",
     "tailwind-merge": "^2.5.4",
