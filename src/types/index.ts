@@ -15,14 +15,16 @@ export interface Deployment {
   projectId: string;
   version: string;
   buildLogs: string[];
-  status: 'BUILDING' | 'DEPLOYED' | 'FAILED';
+  status: DeploymentStatus;
   createdAt: Date;
+  environmentId: string;
 }
 
 export type Framework = 'NEXTJS' | 'REMIX' | 'ASTRO';
 
 export interface BuildConfig {
   projectId: string;
+  userId: string;     
   framework: Framework;
   buildCommand: string;
   nodeVersion: string;
@@ -34,15 +36,14 @@ export interface BuildConfig {
   };
 }
 
-export interface DeploymentConfig {
-  id: string;
+export interface ProjectConfig {
   projectId: string;
-  buildId: string;
-  status: DeploymentStatus;
-  domain: string;
+  userId: string;   
+  version: string;
+  environment: string;
   framework: Framework;
-  createdAt: Date;
-  env: Record<string, string>;
+  buildCommand: string;   
+  nodeVersion: string;   
 }
 
 export type DeploymentStatus = 
@@ -58,6 +59,7 @@ export interface BuildResult {
   success: boolean;
   duration: number;
   logs: string[];
+  buildTime: number;
   assets: {
     static: string[];
     server: string[];
