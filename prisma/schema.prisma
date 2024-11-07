@@ -95,7 +95,7 @@ model Domain {
   dnsRecords   DnsRecord[]
   
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  updatedAt    DateTime      @default(now())
 
   @@index([projectId])
   @@index([userId])
@@ -129,7 +129,11 @@ model Deployment {
   cpu          Float            @default(0) // percentage
   
   createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  updatedAt    DateTime         @default(now())
+
+  metrics      Metrics[]
+
+  url         String?
 
   @@index([projectId])
   @@index([status])
@@ -146,7 +150,7 @@ model Environment {
   deployments  Deployment[]
   
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  updatedAt    DateTime      @default(now())
 
   @@unique([projectId, name])
 }
@@ -159,7 +163,7 @@ model EnvVariable {
   environment   Environment @relation(fields: [environmentId], references: [id])
   
   createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  updatedAt     DateTime    @default(now())
 
   @@unique([environmentId, key])
 }
@@ -174,7 +178,7 @@ model DnsRecord {
   ttl       Int        @default(3600)
   
   createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  updatedAt DateTime   @default(now())
 }
 
 model Analytics {
@@ -212,7 +216,7 @@ model EdgeFunction {
   metrics     EdgeFunctionMetrics[]
   
   createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  updatedAt   DateTime     @default(now())
 
   @@index([projectId])
 }
@@ -241,7 +245,7 @@ model ProjectConfig {
   project         Project @relation(fields: [projectId], references: [id])
   renderingConfig Json
   createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime @default(now())
 }
 
 model ProjectFile {
@@ -250,7 +254,7 @@ model ProjectFile {
   content   String @db.Text
   project   Project @relation(fields: [projectId], references: [id])
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   @@id([projectId, filename])
 }
@@ -296,10 +300,31 @@ model ProjectStorage {
   hash      String
   size      Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now())
 
   @@index([projectId])
   @@index([createdAt])
+}
+
+model Metrics {
+  id            String    @id @default(cuid())
+  deploymentId  String
+  deployment    Deployment @relation(fields: [deploymentId], references: [id])
+  
+  // Container metrics
+  cpu           Float     @default(0)
+  memory        Int      @default(0)
+  requests      Int      @default(0)
+  responseTime  Float    @default(0)
+  
+  // Additional metrics
+  errorRate     Float    @default(0)
+  throughput    Int      @default(0)
+  
+  timestamp     DateTime  @default(now())
+
+  @@index([deploymentId])
+  @@index([timestamp])
 }
 
 
