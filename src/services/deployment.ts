@@ -1,21 +1,24 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Project, Deployment } from '@prisma/client';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Project, Deployment, DeploymentStatus } from '@prisma/client';
 import Docker from 'dockerode';
 import path from 'path';
+import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 export class DeploymentService {
   private docker: Docker;
-  
+
   constructor() {
     this.docker = new Docker();
   }
 
-  async deployProject(projectId: string, files: Buffer): Promise<Deployment> {
+  async deployProject(projectId: string, userId: string, files: Buffer): Promise<Deployment> {
+    const buildId = uuidv4();
+    const buildPath = path.join(process.cwd(), 'builds', buildId);
+
     try {
-      // Create unique build directory
-      const buildId = uuidv4();
-      const buildPath = path.join(process.cwd(), 'builds', buildId);
+      // Create build directory
+      await fs.ensureDir(buildPath);
 
       // Extract files to build directory
       await this.extractFiles(files, buildPath);
@@ -23,21 +26,49 @@ export class DeploymentService {
       // Build Docker image
       const image = await this.buildDockerImage(buildPath, projectId);
 
-      // Create container and start it
-      const container = await this.createContainer(image.id, projectId);
+      // Create and start container
+      const container = await this.createContainer(image, projectId);
       await container.start();
 
-      // Setup nginx reverse proxy for the domain
+      // Setup domain proxy
       await this.setupDomainProxy(projectId, container.id);
 
       return {
         id: buildId,
-        status: 'DEPLOYED',
-        // ... other deployment details
-      };
+        projectId,
+        userId,
+        version: '1.0.0', // Example version
+        commitHash: null, // Example commit hash
+        branch: 'main', // Example branch
+        environmentId: 'default', // Example environment
+        buildLogs: [], // Example build logs
+        buildTime: 0, // Example build time
+        status: 'DEPLOYED' as DeploymentStatus,
+        containerId: container.id,
+        containerPort: 3000, // Example port
+        memory: 0, // Example memory usage
+        cpu: 0, // Example CPU usage
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Deployment;
     } catch (error) {
-      throw new Error(`Deployment failed: ${error.message}`);
+      if (error instanceof Error) {
+        console.error(`Deployment failed: ${error.message}`);
+        throw new Error(`Deployment failed: ${error.message}`);
+      } else {
+        console.error('Deployment failed: An unknown error occurred');
+        throw new Error('Deployment failed: An unknown error occurred');
+      }
+    } finally {
+      // Clean up build directory
+      await fs.remove(buildPath);
     }
+  }
+
+  private async extractFiles(files: Buffer, buildPath: string) {
+    // Implement file extraction logic
+    // For example, using a library like `unzipper` or `tar`
+    console.log(`Extracting files to ${buildPath}`);
   }
 
   private async buildDockerImage(buildPath: string, projectId: string) {
@@ -51,12 +82,45 @@ export class DeploymentService {
       CMD ["npm", "start"]
     `;
 
-    // Create Dockerfile
+    // Write Dockerfile
     await fs.writeFile(path.join(buildPath, 'Dockerfile'), dockerfile);
 
-    return await this.docker.buildImage({
-      context: buildPath,
-      src: ['Dockerfile', '.next', 'package.json', 'node_modules']
-    }, { t: `project-${projectId}` });
+    return new Promise<Docker.Image>((resolve, reject) => {
+      this.docker.buildImage({
+        context: buildPath,
+        src: ['Dockerfile', '.next', 'package.json', 'node_modules']
+      }, { t: `project-${projectId}` }, (error, stream) => {
+        if (error) {
+          return reject(error);
+        }
+        if (!stream) {
+          return reject(new Error('Docker build stream is undefined'));
+        }
+        this.docker.modem.followProgress(stream, (err, res) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(this.docker.getImage(`project-${projectId}`));
+        });
+      });
+    });
+  }
+
+  private async createContainer(image: Docker.Image, projectId: string) {
+    return this.docker.createContainer({
+      Image: image.id,
+      name: `project-${projectId}`,
+      Env: ['NODE_ENV=production'],
+      HostConfig: {
+        PortBindings: {
+          '3000/tcp': [{ HostPort: '3000' }]
+        }
+      }
+    });
+  }
+
+  private async setupDomainProxy(projectId: string, containerId: string) {
+    // Implement domain proxy setup logic
+    console.log(`Setting up domain proxy for project ${projectId} and container ${containerId}`);
   }
 } 
