@@ -19,6 +19,9 @@ interface StorageMetrics {
 }
 
 export class StorageService {
+  prepareBuildDirectory(deploymentId: string, files: Buffer<ArrayBufferLike>) {
+    throw new Error('Method not implemented.');
+  }
   private supabase: SupabaseClient;
   private readonly BUCKET_NAME = 'project-builds';
   private readonly config: StorageConfig = {

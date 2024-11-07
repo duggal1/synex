@@ -66,13 +66,16 @@ model Project {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  @@index([userId])
-  @@index([status])
+  productionDeploymentId String?
 
   edgeFunctions EdgeFunction[]
   storage ProjectStorage[]
   config ProjectConfig?
   files ProjectFile[]
+  cacheHeaders Json?
+
+  @@index([userId])
+  @@index([status])
 }
 
 model Domain {
@@ -298,3 +301,5 @@ model ProjectStorage {
   @@index([projectId])
   @@index([createdAt])
 }
+
+

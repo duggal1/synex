@@ -9,6 +9,9 @@ const execAsync = promisify(exec);
 const dnsResolve = promisify(dns.resolve);
 
 export class DomainService {
+  setupRouting(projectId: string, port: number) {
+    throw new Error('Method not implemented.');
+  }
   private cloudflare: CloudflareService;
   
   constructor() {

@@ -19,6 +19,9 @@ interface ContainerConfig {
 }
 
 export class DockerService {
+  getContainer(containerId: string) {
+    throw new Error('Method not implemented.');
+  }
   private docker: Docker;
   private readonly buildTimeout = 600000; // 10 minutes
   private readonly defaultConfig: ContainerConfig = {
