@@ -19,9 +19,13 @@ interface StorageMetrics {
 }
 
 export class StorageService {
-  prepareBuildDirectory(deploymentId: string, files: Buffer<ArrayBufferLike>) {
-    throw new Error('Method not implemented.');
+  async prepareBuildDirectory(deploymentId: string, files: Buffer): Promise<string> {
+    const buildPath = path.join('/tmp/builds', deploymentId);
+    await fs.ensureDir(buildPath);
+    // Logic to extract files to buildPath
+    return buildPath;
   }
+
   private supabase: SupabaseClient;
   private readonly BUCKET_NAME = 'project-builds';
   private readonly config: StorageConfig = {

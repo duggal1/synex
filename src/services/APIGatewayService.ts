@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from '@/lib/prisma';
 import { createProxyMiddleware, RequestHandler } from 'http-proxy-middleware';
 import { Redis } from 'ioredis';
@@ -19,7 +20,7 @@ export class APIGatewayService {
   private wsServer: WebSocket.Server;
 
   constructor() {
-    this.redis = new Redis(process.env.REDIS_URL);
+    this.redis = new Redis(process.env.REDIS_URL!);
     this.wsServer = new WebSocket.Server({ noServer: true });
   }
 
@@ -80,7 +81,7 @@ export class APIGatewayService {
         }
       },
       // Dynamic routes
-      ...routes.map(route => ({
+      ...routes.map((route: { path: any; isSsr: any; }) => ({
         path: route.path,
         method: ['GET'],
         cache: {

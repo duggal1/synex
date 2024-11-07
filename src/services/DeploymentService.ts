@@ -3,7 +3,7 @@ import { DockerService } from './DockerService';
 import { DomainService } from './DomainService';
 import { StorageService } from './StorageService';
 import { BuildService } from './BuildService';
-import { ProjectConfig } from '@/types';
+import { ProjectConfig, DeploymentStatus, BuildConfig } from '@/types';
 import { logger } from '@/lib/logger';
 
 export class DeploymentService {
@@ -26,18 +26,29 @@ export class DeploymentService {
     config: ProjectConfig
   ) {
     try {
-      // Create deployment record
+      if (!config.buildCommand) {
+        throw new Error('buildCommand is required');
+      }
+      if (!config.nodeVersion) {
+        throw new Error('nodeVersion is required');
+      }
+      if (!config.userId) {
+        throw new Error('userId is required');
+      }
+
       const deployment = await prisma.deployment.create({
         data: {
           projectId,
           userId,
-          status: 'QUEUED',
+          status: 'QUEUED' as DeploymentStatus,
           version: config.version,
           buildLogs: [],
+          environmentId: config.environment,
+          buildCommand: config.buildCommand,
+          nodeVersion: config.nodeVersion,
         }
       });
 
-      // Process deployment asynchronously
       this.processDeployment(deployment.id, files, config).catch(error => {
         logger.error('Deployment processing failed', { deploymentId: deployment.id, error });
       });
@@ -55,62 +66,89 @@ export class DeploymentService {
     config: ProjectConfig
   ) {
     try {
-      // Update status to building
       await this.updateDeploymentStatus(deploymentId, 'BUILDING');
 
-      // Extract and prepare build directory
       const buildPath = await this.storageService.prepareBuildDirectory(deploymentId, files);
 
-      // Get environment variables
       const envVars = await this.getEnvironmentVariables(config.projectId, config.environment);
 
-      // Build the project
-      const buildResult = await this.buildService.build(buildPath, config);
+      const buildConfig: BuildConfig = {
+        projectId: config.projectId,
+        userId: config.userId,
+        framework: config.framework,
+        buildCommand: config.buildCommand,
+        nodeVersion: config.nodeVersion,
+        env: envVars
+      };
 
-      // Build Docker image
+      const buildResult = await this.buildService.build(
+        buildConfig.projectId,
+        buildConfig.userId,
+        config.environment,
+        buildConfig
+      );
+
       const imageName = await this.dockerService.buildImage(
         config.projectId,
         buildPath,
         envVars
       );
 
-      // Get available port
       const port = await this.getAvailablePort();
 
-      // Run container
       const containerId = await this.dockerService.runContainer(
         imageName,
         config.projectId,
         port
       );
 
-      // Setup domain routing
       await this.domainService.setupRouting(config.projectId, port);
 
-      // Update deployment record
       await prisma.deployment.update({
         where: { id: deploymentId },
         data: {
-          status: 'DEPLOYED',
+          status: 'DEPLOYED' as DeploymentStatus,
           containerId,
           containerPort: port,
           buildTime: buildResult.buildTime,
         }
       });
 
-      // Cleanup old deployments
       await this.cleanupOldDeployments(config.projectId);
+
+      const project = await prisma.project.findUnique({
+        where: { id: config.projectId }
+      });
+
+      if (project) {
+        const domain = await this.domainService.createProjectSubdomain(
+          config.projectId,
+          project.name
+        );
+
+        await prisma.deployment.update({
+          where: { id: deploymentId },
+          data: {
+            deploymentUrl: domain.domain,
+            status: 'DEPLOYED' as DeploymentStatus
+          }
+        });
+      }
 
     } catch (error) {
       logger.error('Deployment processing failed', { deploymentId, error });
-      await this.updateDeploymentStatus(deploymentId, 'FAILED', error.message);
+      if (error instanceof Error) {
+        await this.updateDeploymentStatus(deploymentId, 'FAILED', error.message);
+      } else {
+        await this.updateDeploymentStatus(deploymentId, 'FAILED', 'Unknown error');
+      }
       throw error;
     }
   }
 
   private async updateDeploymentStatus(
     deploymentId: string,
-    status: string,
+    status: DeploymentStatus,
     error?: string
   ) {
     await prisma.deployment.update({
@@ -142,12 +180,10 @@ export class DeploymentService {
   }
 
   private async getAvailablePort(): Promise<number> {
-    // Implementation to find available port
     return 3000; // Simplified for example
   }
 
   private async cleanupOldDeployments(projectId: string) {
-    // Keep only last 5 deployments
     const oldDeployments = await prisma.deployment.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
@@ -157,7 +193,7 @@ export class DeploymentService {
     for (const deployment of oldDeployments) {
       if (deployment.containerId) {
         try {
-          const container = await this.dockerService.docker.getContainer(deployment.containerId);
+          const container = this.dockerService.getContainer(deployment.containerId);
           await container.stop();
           await container.remove();
         } catch (error) {

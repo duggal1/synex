@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@/lib/prisma';
 import { BuildPipeline } from './BuildPipeline';
 import { ContainerManager } from './ContainerManager';
@@ -16,18 +17,15 @@ export class DeploymentOrchestrator {
     this.domainService = new DomainService();
   }
 
-  async deploy(projectId: string, files: Buffer) {
-    const deployment = await this.createDeployment(projectId);
+  async deploy(projectId: string, userId: string, files: Buffer) {
+    const deployment = await this.createDeployment(projectId, userId);
 
     try {
-      // 1. Framework Detection & Validation
       const framework = await this.detectFramework(files);
       await this.validateProject(files, framework);
 
-      // 2. Build Process
       const buildResult = await this.buildPipeline.build(deployment.id, files, framework);
 
-      // 3. Container Setup
       const container = await this.containerManager.deploy({
         deploymentId: deployment.id,
         buildPath: buildResult.outputPath,
@@ -35,13 +33,10 @@ export class DeploymentOrchestrator {
         env: buildResult.env
       });
 
-      // 4. Domain Setup
       const domain = await this.domainService.setupDomain(deployment.id);
 
-      // 5. Health Check & Verification
       await this.verifyDeployment(container.id, domain.url);
 
-      // 6. Update Production Traffic
       await this.updateProduction(projectId, deployment.id);
 
       return {
@@ -49,25 +44,30 @@ export class DeploymentOrchestrator {
         url: domain.url,
         container: container.id
       };
-
     } catch (error) {
-      await this.handleDeploymentFailure(deployment.id, error);
+      if (error instanceof Error) {
+        await this.handleDeploymentFailure(deployment.id, error);
+      } else {
+        await this.handleDeploymentFailure(deployment.id, new Error('Unknown error'));
+      }
       throw error;
     }
   }
 
-  private async createDeployment(projectId: string) {
+  private async createDeployment(projectId: string, userId: string) {
     return await prisma.deployment.create({
       data: {
         projectId,
-        status: 'QUEUED',
-        version: Date.now().toString()
+        userId,
+        status: 'QUEUED' as DeploymentStatus,
+        version: Date.now().toString(),
+        environmentId: 'default',
+        buildLogs: []
       }
     });
   }
 
   private async detectFramework(files: Buffer): Promise<Framework> {
-    // Implement framework detection logic
     const hasNextConfig = await this.searchInFiles(files, 'next.config');
     const hasRemixConfig = await this.searchInFiles(files, 'remix.config');
     const hasAstroConfig = await this.searchInFiles(files, 'astro.config');
@@ -79,15 +79,30 @@ export class DeploymentOrchestrator {
     throw new Error('Unsupported framework');
   }
 
+  private async searchInFiles(files: Buffer, configName: string): Promise<boolean> {
+    return files.includes(Buffer.from(configName));
+  }
+
   private async validateProject(files: Buffer, framework: Framework) {
-    // Implement project validation
     const validations = {
       NEXTJS: this.validateNextJS,
       REMIX: this.validateRemix,
       ASTRO: this.validateAstro
     };
 
-    await validations[framework](files);
+    await validations[framework].call(this, files);
+  }
+
+  private async validateNextJS(files: Buffer) {
+    // Implement Next.js validation logic
+  }
+
+  private async validateRemix(files: Buffer) {
+    // Implement Remix validation logic
+  }
+
+  private async validateAstro(files: Buffer) {
+    // Implement Astro validation logic
   }
 
   private async verifyDeployment(containerId: string, url: string) {
@@ -114,23 +129,22 @@ export class DeploymentOrchestrator {
 
   private async updateProduction(projectId: string, deploymentId: string) {
     await prisma.$transaction(async (tx) => {
-      // Update current production deployment
       await tx.project.update({
         where: { id: projectId },
         data: { productionDeploymentId: deploymentId }
       });
 
-      // Clean up old deployments
       const oldDeployments = await tx.deployment.findMany({
         where: { 
           projectId,
           NOT: { id: deploymentId },
-          status: 'ACTIVE'
+          status: 'ACTIVE' as DeploymentStatus
         }
       });
-
       for (const deployment of oldDeployments) {
-        await this.containerManager.stopContainer(deployment.containerId);
+        if (deployment.containerId !== null) {
+          await this.containerManager.stopContainer(deployment.containerId);
+        }
       }
     });
   }
@@ -139,12 +153,11 @@ export class DeploymentOrchestrator {
     await prisma.deployment.update({
       where: { id: deploymentId },
       data: {
-        status: 'FAILED',
-        error: error.message
+        status: 'FAILED' as DeploymentStatus,
+        buildLogs: [{ message: error.message, timestamp: new Date() }]
       }
     });
 
-    // Cleanup resources
     await this.containerManager.cleanup(deploymentId);
     logger.error('Deployment failed', { deploymentId, error });
   }

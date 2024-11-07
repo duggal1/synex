@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import dns from 'dns';
 import { CloudflareService } from '@/services/CloudflareService';
+import { logger } from '@/lib/logger';
 
 const execAsync = promisify(exec);
 const dnsResolve = promisify(dns.resolve);
@@ -168,5 +169,61 @@ export class DomainService {
       where: { domain }
     });
     return !existing;
+  }
+
+  async setupDomain(deploymentId: string): Promise<{ url: string }> {
+    // Implement domain setup logic
+    return { url: `https://synexai.in/${deploymentId}` };
+  }
+
+  async createProjectSubdomain(projectId: string, projectName: string) {
+    try {
+      const subdomain = this.generateSubdomainName(projectName);
+      const baseDomain = process.env.BASE_DOMAIN || 'yourdomain.com';
+      const fullDomain = `${subdomain}.${baseDomain}`;
+
+      // Create domain record
+      const domain = await prisma.domain.create({
+        data: {
+          domain: fullDomain,
+          projectId,
+          userId: (await prisma.project.findUnique({
+            where: { id: projectId },
+            select: { userId: true }
+          }))!.userId,
+          type: 'SUBDOMAIN',
+          verified: true, // Auto-verified for subdomains
+          ssl: true
+        }
+      });
+
+      // Setup Cloudflare DNS
+      await this.cloudflare.createDNSRecord({
+        name: subdomain,
+        type: 'A',
+        content: process.env.LOAD_BALANCER_IP!,
+        proxied: true
+      });
+
+      return domain;
+    } catch (error) {
+      logger.error('Failed to create project subdomain:', error);
+      throw error;
+    }
+  }
+
+  private generateSubdomainName(projectName: string): string {
+    // Sanitize project name
+    let subdomain = projectName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-') // Replace invalid chars with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+
+    // Add unique identifier
+    const uniqueId = Math.random().toString(36).substring(2, 7);
+    subdomain = `${subdomain}-${uniqueId}`;
+
+    return subdomain;
   }
 } 

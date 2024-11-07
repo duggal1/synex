@@ -10,11 +10,11 @@ interface CloudflareResponse {
 }
 
 interface DNSRecord {
-  type: 'A' | 'CNAME' | 'TXT' | 'MX' | 'NS';
   name: string;
+  type: 'A' | 'CNAME' | 'TXT' | 'MX';
   content: string;
+  proxied: boolean;
   ttl?: number;
-  proxied?: boolean;
 }
 
 interface SSLConfig {
@@ -23,58 +23,150 @@ interface SSLConfig {
 }
 
 export class CloudflareService {
-  private apiToken: string;
-  private baseUrl: string = 'https://api.cloudflare.com/client/v4';
-  private zoneId: string;
+  private readonly apiToken: string;
+  private readonly zoneId: string;
+  private readonly baseUrl: string = 'https://api.cloudflare.com/client/v4';
 
   constructor() {
-    this.apiToken = process.env.CLOUDFLARE_API_TOKEN || '';
-    this.zoneId = process.env.CLOUDFLARE_ZONE_ID || '';
+    this.apiToken = process.env.CLOUDFLARE_API_TOKEN!;
+    this.zoneId = process.env.CLOUDFLARE_ZONE_ID!;
 
     if (!this.apiToken || !this.zoneId) {
-      throw new Error('Cloudflare credentials not configured');
+      throw new Error('Cloudflare API token and Zone ID are required');
     }
   }
 
-  async addDomain(domain: string): Promise<boolean> {
+  async createDNSRecord(record: DNSRecord) {
     try {
-      // Add domain to Cloudflare
-      await this.makeRequest('/zones', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: domain,
-          account: { id: process.env.CLOUDFLARE_ACCOUNT_ID },
-          jump_start: true
-        })
+      const response = await fetch(
+        `${this.baseUrl}/zones/${this.zoneId}/dns_records`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: record.type,
+            name: record.name,
+            content: record.content,
+            proxied: record.proxied,
+            ttl: record.ttl || 1, // 1 = automatic
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.errors?.[0]?.message || 'Failed to create DNS record');
+      }
+
+      logger.info('DNS record created successfully', {
+        domain: record.name,
+        type: record.type,
+        content: record.content,
       });
 
-      // Configure initial settings
-      await this.configureInitialSettings(domain);
-
-      return true;
+      return data.result;
     } catch (error) {
-      logger.error('Failed to add domain to Cloudflare:', error as Error);
-      throw error;
+      logger.error('Failed to create DNS record', {
+        error,
+        record,
+      });
+      throw new Error(`Failed to create DNS record: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  async addDNSRecord(record: DNSRecord): Promise<boolean> {
+  async deleteDNSRecord(recordId: string) {
     try {
-      await this.makeRequest(`/zones/${this.zoneId}/dns_records`, {
-        method: 'POST',
-        body: JSON.stringify({
-          type: record.type,
-          name: record.name,
-          content: record.content,
-          ttl: record.ttl || 1, // Auto TTL
-          proxied: record.proxied !== false
-        })
+      const response = await fetch(
+        `${this.baseUrl}/zones/${this.zoneId}/dns_records/${recordId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.errors?.[0]?.message || 'Failed to delete DNS record');
+      }
+
+      logger.info('DNS record deleted successfully', { recordId });
+    } catch (error) {
+      logger.error('Failed to delete DNS record', {
+        error,
+        recordId,
+      });
+      throw new Error(`Failed to delete DNS record: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getDNSRecords(domain: string) {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/zones/${this.zoneId}/dns_records?name=${domain}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.errors?.[0]?.message || 'Failed to fetch DNS records');
+      }
+
+      return data.result;
+    } catch (error) {
+      logger.error('Failed to fetch DNS records', {
+        error,
+        domain,
+      });
+      throw new Error(`Failed to fetch DNS records: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async updateDNSRecord(recordId: string, record: Partial<DNSRecord>) {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/zones/${this.zoneId}/dns_records/${recordId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(record),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.errors?.[0]?.message || 'Failed to update DNS record');
+      }
+
+      logger.info('DNS record updated successfully', {
+        recordId,
+        updates: record,
       });
 
-      return true;
+      return data.result;
     } catch (error) {
-      logger.error('Failed to add DNS record:', error as Error);
-      throw error;
+      logger.error('Failed to update DNS record', {
+        error,
+        recordId,
+        record,
+      });
+      throw new Error(`Failed to update DNS record: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

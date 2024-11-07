@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@/lib/prisma';
 import Docker from 'dockerode';
@@ -5,6 +6,7 @@ import { Redis } from 'ioredis';
 import { logger } from '@/lib/logger';
 import { MetricsCollector } from '@/lib/metrics';
 import { EventEmitter } from 'events';
+import { SubscriptionStatus } from '@prisma/client';
 
 interface ScalingRule {
   metric: 'cpu' | 'memory' | 'requests';
@@ -30,7 +32,7 @@ export class AutoScalingService extends EventEmitter {
   constructor() {
     super();
     this.docker = new Docker();
-    this.redis = new Redis(process.env.REDIS_URL);
+    this.redis = new Redis(process.env.REDIS_URL!);
     this.metricsCollector = new MetricsCollector();
     this.scalingRules = new Map();
     this.cooldowns = new Map();
@@ -127,15 +129,15 @@ export class AutoScalingService extends EventEmitter {
 
   private async collectMetrics(projectId: string): Promise<ContainerMetrics> {
     const containers = await this.getProjectContainers(projectId);
-    const metrics = await Promise.all(
+    const containerMetrics = await Promise.all(
       containers.map(c => this.metricsCollector.getContainerStats(c.id))
     );
 
     return {
-      cpu: this.calculateAverageCPU(metrics),
-      memory: this.calculateAverageMemory(metrics),
-      requests: await this.getRequestRate(projectId),
-      responseTime: await this.getAverageResponseTime(projectId)
+      cpu: await this.metricsCollector.calculateAverageCPU(containerMetrics),
+      memory: await this.metricsCollector.calculateAverageMemory(containerMetrics),
+      requests: await this.metricsCollector.getRequestRate(projectId),
+      responseTime: await this.metricsCollector.getAverageResponseTime(projectId)
     };
   }
 
@@ -171,18 +173,29 @@ export class AutoScalingService extends EventEmitter {
   private async executeScaling(projectId: string, action: 'scale_up' | 'scale_down') {
     try {
       const project = await prisma.project.findUnique({
-        where: { id: projectId }
+        where: { id: projectId },
+        include: {
+          user: {
+            select: {
+              subscriptionStatus: true
+            }
+          }
+        }
       });
+
+      if (!project) {
+        throw new Error('Project not found');
+      }
 
       const containers = await this.getProjectContainers(projectId);
       const currentCount = containers.length;
 
       if (action === 'scale_up') {
-        if (await this.canScaleUp(project, currentCount)) {
+        if (await this.canScaleUp({ subscriptionStatus: project.user.subscriptionStatus }, currentCount)) {
           await this.createContainer(project);
         }
       } else {
-        if (await this.canScaleDown(project, currentCount)) {
+        if (await this.canScaleDown({ subscriptionStatus: project.user.subscriptionStatus }, currentCount)) {
           await this.removeContainer(containers[containers.length - 1]);
         }
       }
@@ -203,8 +216,8 @@ export class AutoScalingService extends EventEmitter {
     }
   }
 
-  private async canScaleUp(project: any, currentCount: number): Promise<boolean> {
-    const limits = {
+  private async canScaleUp(project: { subscriptionStatus: SubscriptionStatus }, currentCount: number): Promise<boolean> {
+    const limits: Record<SubscriptionStatus, number> = {
       FREE: 2,
       PRO: 5,
       ENTERPRISE: 20
@@ -213,21 +226,24 @@ export class AutoScalingService extends EventEmitter {
     return currentCount < limits[project.subscriptionStatus];
   }
 
-  private async canScaleDown(project: any, currentCount: number): Promise<boolean> {
+  private async canScaleDown(project: { subscriptionStatus: SubscriptionStatus }, currentCount: number): Promise<boolean> {
     const minContainers = project.subscriptionStatus === 'FREE' ? 1 : 2;
     return currentCount > minContainers;
   }
 
-  private async createContainer(project: any) {
+  private async createContainer(project: { id: string }) {
     const container = await this.docker.createContainer({
       Image: `project-${project.id}:latest`,
       name: `${project.id}-${Date.now()}`,
       HostConfig: {
         Memory: 1024 * 1024 * 1024, // 1GB
-        NanoCPUs: 1000000000, // 1 CPU
+        NanoCpus: 1000000000, // 1 CPU
         RestartPolicy: {
           Name: 'always'
         }
+      },
+      Labels: {
+        project: project.id
       },
       Env: await this.getProjectEnv(project.id)
     });

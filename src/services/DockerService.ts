@@ -19,10 +19,16 @@ interface ContainerConfig {
 }
 
 export class DockerService {
-  getContainer(containerId: string) {
-    throw new Error('Method not implemented.');
-  }
   private docker: Docker;
+
+  constructor() {
+    this.docker = new Docker();
+  }
+
+  getContainer(containerId: string): Docker.Container {
+    return this.docker.getContainer(containerId);
+  }
+
   private readonly buildTimeout = 600000; // 10 minutes
   private readonly defaultConfig: ContainerConfig = {
     memory: 1024 * 1024 * 1024, // 1GB
@@ -34,18 +40,6 @@ export class DockerService {
       retries: 3
     }
   };
-
-  constructor() {
-    try {
-      this.docker = new Docker({
-        socketPath: '/var/run/docker.sock',
-        timeout: this.buildTimeout
-      });
-    } catch (error) {
-      logger.error('Failed to initialize Docker client:', error as Error);
-      throw new Error('Docker initialization failed');
-    }
-  }
 
   async buildImage(
     projectId: string,

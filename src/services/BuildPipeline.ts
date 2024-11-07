@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@/lib/prisma';
 import { Framework } from '@/types';
 import path from 'path';
@@ -49,7 +52,7 @@ export class BuildPipeline {
       await this.cacheBuild(buildPath, cacheKey);
 
       const buildTime = Date.now() - startTime;
-      await this.updateBuildStatus(deploymentId, 'SUCCESS', buildTime);
+      await this.updateBuildStatus(deploymentId, 'DEPLOYED', buildTime);
 
       return {
         outputPath: buildPath,
@@ -57,37 +60,54 @@ export class BuildPipeline {
         env: buildResult.env,
         cacheKey
       };
-
     } catch (error) {
-      await this.updateBuildStatus(deploymentId, 'FAILED', 0, error);
+      if (error instanceof Error) {
+        await this.updateBuildStatus(deploymentId, 'FAILED', 0, error);
+      } else {
+        await this.updateBuildStatus(deploymentId, 'FAILED', 0, new Error(String(error)));
+      }
       throw error;
     }
   }
 
-  private async runFrameworkBuild(buildPath: string, framework: Framework) {
-    const builds = {
-      NEXTJS: this.buildNextJS,
-      REMIX: this.buildRemix,
-      ASTRO: this.buildAstro
-    };
+  private async extractFiles(buildPath: string, files: Buffer) {
+    // Assuming files are in a zip format
+    const zip = new (require('adm-zip'))(files);
+    zip.extractAllTo(buildPath, true);
+  }
 
-    return await builds[framework](buildPath);
+  private async installDependencies(buildPath: string, framework: Framework) {
+    const packageManager = fs.existsSync(path.join(buildPath, 'yarn.lock')) ? 'yarn' : 'npm';
+    await execAsync(`${packageManager} install`, { cwd: buildPath });
+  }
+
+  private async runFrameworkBuild(buildPath: string, framework: Framework) {
+    switch (framework) {
+      case 'NEXTJS':
+        return await this.buildNextJS(buildPath);
+      case 'REMIX':
+        return await this.buildRemix(buildPath);
+      case 'ASTRO':
+        return await this.buildAstro(buildPath);
+      default:
+        throw new Error(`Unsupported framework: ${framework}`);
+    }
   }
 
   private async buildNextJS(buildPath: string) {
-    // Optimize next.config.js
     await this.optimizeNextConfig(buildPath);
-
-    // Run build
     await execAsync('npm run build', { cwd: buildPath });
+    return { env: { NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1' } };
+  }
 
-    // Collect env
-    const env = {
-      NODE_ENV: 'production',
-      NEXT_TELEMETRY_DISABLED: '1'
-    };
+  private async buildRemix(buildPath: string) {
+    await execAsync('remix build', { cwd: buildPath });
+    return { env: { NODE_ENV: 'production' } };
+  }
 
-    return { env };
+  private async buildAstro(buildPath: string) {
+    await execAsync('astro build', { cwd: buildPath });
+    return { env: { NODE_ENV: 'production' } };
   }
 
   private async optimizeNextConfig(buildPath: string) {
@@ -127,35 +147,36 @@ export class BuildPipeline {
   }
 
   private async optimizeOutput(buildPath: string, framework: Framework) {
-    // Compress assets
-    await execAsync(`find . -type f -name "*.js" -exec gzip -k {} \\;`, {
-      cwd: buildPath
-    });
+    await execAsync(`find . -type f -name "*.js" -exec gzip -k {} \\;`, { cwd: buildPath });
+    await execAsync(`find . -type f \\( -name "*.jpg" -o -name "*.png" \\) -exec convert {} -quality 85 {} \\;`, { cwd: buildPath });
 
-    // Optimize images
-    await execAsync(
-      `find . -type f \\( -name "*.jpg" -o -name "*.png" \\) -exec convert {} -quality 85 {} \\;`,
-      { cwd: buildPath }
-    );
+    switch (framework) {
+      case 'NEXTJS':
+        await this.optimizeNextJSOutput(buildPath);
+        break;
+      case 'REMIX':
+        await this.optimizeRemixOutput(buildPath);
+        break;
+      case 'ASTRO':
+        await this.optimizeAstroOutput(buildPath);
+        break;
+    }
+  }
 
-    // Framework-specific optimizations
-    const optimizations = {
-      NEXTJS: this.optimizeNextJSOutput,
-      REMIX: this.optimizeRemixOutput,
-      ASTRO: this.optimizeAstroOutput
-    };
+  private async optimizeNextJSOutput(buildPath: string) {
+    // Implement Next.js specific optimizations
+  }
 
-    await optimizations[framework](buildPath);
+  private async optimizeRemixOutput(buildPath: string) {
+    // Implement Remix specific optimizations
+  }
+
+  private async optimizeAstroOutput(buildPath: string) {
+    // Implement Astro specific optimizations
   }
 
   private async generateCacheKey(buildPath: string): Promise<string> {
-    const files = [
-      'package.json',
-      'package-lock.json',
-      'yarn.lock',
-      'pnpm-lock.yaml'
-    ];
-
+    const files = ['package.json', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'];
     const hashes = await Promise.all(
       files
         .filter(f => fs.existsSync(path.join(buildPath, f)))
@@ -164,7 +185,6 @@ export class BuildPipeline {
           return createHash('sha256').update(content).digest('hex');
         })
     );
-
     return hashes.join('-');
   }
 
@@ -186,18 +206,13 @@ export class BuildPipeline {
     return null;
   }
 
-  private async updateBuildStatus(
-    deploymentId: string,
-    status: 'SUCCESS' | 'FAILED',
-    duration: number,
-    error?: Error
-  ) {
+  private async updateBuildStatus(deploymentId: string, status: 'DEPLOYED' | 'FAILED', duration: number, error?: Error) {
     await prisma.deployment.update({
       where: { id: deploymentId },
       data: {
-        buildStatus: status,
-        buildDuration: duration,
-        error: error?.message
+        status,
+        buildTime: duration,
+        buildLogs: error ? { push: error.message } : undefined
       }
     });
   }

@@ -109,6 +109,8 @@ model Deployment {
   user         User             @relation(fields: [userId], references: [id])
   
   // Deployment details
+  buildCommand String
+  nodeVersion  String
   version      String
   commitHash   String?
   branch       String           @default("main")
@@ -183,6 +185,7 @@ model DnsRecord {
 
 model Analytics {
   id        String     @id @default(cuid())
+  type      String
   projectId String
   project   Project    @relation(fields: [projectId], references: [id])
   userId    String

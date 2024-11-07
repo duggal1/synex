@@ -1,5 +1,4 @@
 import Docker from 'dockerode';
-import { prisma } from '@/lib/prisma';
 import { Framework } from '@/types';
 import { logger } from '@/lib/logger';
 import path from 'path';
@@ -24,13 +23,8 @@ export class ContainerManager {
     const { deploymentId, buildPath, framework, env } = options;
 
     try {
-      // 1. Build container image
       const image = await this.buildImage(deploymentId, buildPath, framework);
-
-      // 2. Setup container networking
       const network = await this.setupNetworking(deploymentId);
-
-      // 3. Create and start container
       const container = await this.createContainer({
         deploymentId,
         image,
@@ -38,8 +32,7 @@ export class ContainerManager {
         network
       });
 
-      // 4. Setup monitoring
-      await this.setupMonitoring(container.id);
+      await container.start();
 
       return {
         id: container.id,
@@ -56,19 +49,33 @@ export class ContainerManager {
   private async buildImage(deploymentId: string, buildPath: string, framework: Framework) {
     const dockerfile = this.getDockerfile(framework);
     
-    const image = await this.docker.buildImage({
-      context: buildPath,
-      src: ['Dockerfile', '.next', 'node_modules', 'package.json']
-    }, {
-      t: `deployment-${deploymentId}`,
-      dockerfile
+    return new Promise<Docker.Image>((resolve, reject) => {
+      this.docker.buildImage({
+        context: buildPath,
+        src: ['Dockerfile', '.next', 'node_modules', 'package.json']
+      }, {
+        t: `deployment-${deploymentId}`,
+        dockerfile
+      }, (error, stream) => {
+        if (error) {
+          return reject(error);
+        }
+        if (!stream) {
+          return reject(new Error('Docker build stream is undefined'));
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        this.docker.modem.followProgress(stream, (err, res) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(this.docker.getImage(`deployment-${deploymentId}`));
+        });
+      });
     });
-
-    return image;
   }
 
   private async setupNetworking(deploymentId: string) {
-    const network = await this.docker.createNetwork({
+    return this.docker.createNetwork({
       Name: `network-${deploymentId}`,
       Driver: 'bridge',
       Internal: false,
@@ -78,8 +85,6 @@ export class ContainerManager {
         'com.docker.network.bridge.enable_ip_masquerade': 'true'
       }
     });
-
-    return network;
   }
 
   private async createContainer(options: {
@@ -88,14 +93,14 @@ export class ContainerManager {
     env: Record<string, string>;
     network: Docker.Network;
   }) {
-    const container = await this.docker.createContainer({
+    return this.docker.createContainer({
       Image: options.image.id,
       name: `deployment-${options.deploymentId}`,
       Env: Object.entries(options.env).map(([k, v]) => `${k}=${v}`),
       HostConfig: {
         NetworkMode: options.network.id,
         Memory: 1024 * 1024 * 1024, // 1GB
-        NanoCPUs: 1000000000, // 1 CPU
+        NanoCpus: 1000000000, // 1 CPU
         RestartPolicy: {
           Name: 'always'
         }
@@ -114,9 +119,6 @@ export class ContainerManager {
         Retries: 3
       }
     });
-
-    await container.start();
-    return container;
   }
 
   async checkHealth(containerId: string) {
@@ -130,21 +132,28 @@ export class ContainerManager {
 
   async cleanup(deploymentId: string) {
     try {
-      // Stop and remove container
       const container = this.docker.getContainer(`deployment-${deploymentId}`);
       await container.stop();
       await container.remove();
 
-      // Remove network
       const network = this.docker.getNetwork(`network-${deploymentId}`);
       await network.remove();
 
-      // Remove image
       const image = this.docker.getImage(`deployment-${deploymentId}`);
       await image.remove();
 
     } catch (error) {
       logger.error('Cleanup failed', { deploymentId, error });
+    }
+  }
+
+  async stopContainer(containerId: string) {
+    try {
+      const container = this.docker.getContainer(containerId);
+      await container.stop();
+      await container.remove();
+    } catch (error) {
+      logger.error('Failed to stop container', { containerId, error });
     }
   }
 
@@ -168,13 +177,4 @@ export class ContainerManager {
 
     return dockerfiles[framework];
   }
-} 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async manageContainer(projectId: string) {
-    // 1. Container networking
-    // 2. Volume management
-    // 3. Resource limits
-    // 4. Log management
-    // 5. Container health monitoring
-  }
-} 
+}

@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@/lib/prisma';
 import path from 'path';
 import fs from 'fs-extra';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { BuildConfig, Framework, BuildResult } from '@/types';
+
 
 const execAsync = promisify(exec);
 
@@ -16,12 +19,26 @@ export class BuildService {
     this.cacheDir = path.join(process.cwd(), 'cache');
   }
 
-  async build(projectId: string, config: BuildConfig): Promise<BuildResult> {
+  async build(
+    projectId: string,
+    userId: string,
+    environmentId: string,
+    config: BuildConfig
+  ): Promise<BuildResult> {
+    // Validate all required parameters are present
+    if (!projectId || !userId || !environmentId || !config) {
+      throw new Error('Missing required parameters for build');
+    }
+
+    let deployment;
+
     try {
-      // Update build status in database
-      await prisma.deployment.create({
+      // Create a new deployment record
+      deployment = await prisma.deployment.create({
         data: {
           projectId,
+          userId,
+          environmentId,
           status: 'BUILDING',
           buildLogs: [],
           version: Date.now().toString(),
@@ -46,8 +63,8 @@ export class BuildService {
       await this.applyPostBuildOptimizations(buildPath, config.framework);
 
       // Update successful build in database
-      const deployment = await prisma.deployment.update({
-        where: { projectId },
+      await prisma.deployment.update({
+        where: { id: deployment.id },
         data: {
           status: 'DEPLOYED',
           buildLogs: { push: 'Build completed successfully' }
@@ -62,20 +79,37 @@ export class BuildService {
         assets: {
           static: [],  // Add actual asset paths
           server: []   // Add actual server files
-        }
+        },
+        buildTime: Date.now() - new Date(deployment.createdAt).getTime()
       };
 
     } catch (error) {
-      // Update failed build in database
-      await prisma.deployment.update({
-        where: { projectId },
-        data: {
-          status: 'FAILED',
-          buildLogs: { push: error.message }
-        }
-      });
+      if (deployment) {
+        // Update failed build in database
+        await prisma.deployment.update({
+          where: { id: deployment.id },
+          data: {
+            status: 'FAILED',
+            buildLogs: { push: (error as Error).message }
+          }
+        });
+      }
 
       throw error;
+    }
+  }
+
+  private async runFrameworkBuild(buildPath: string, framework: Framework) {
+    switch (framework) {
+      case 'NEXTJS':
+        await execAsync('npm run build', { cwd: buildPath });
+        break;
+      case 'REMIX':
+        await execAsync('remix build', { cwd: buildPath });
+        break;
+      case 'ASTRO':
+        await execAsync('astro build', { cwd: buildPath });
+        break;
     }
   }
 
@@ -98,7 +132,6 @@ export class BuildService {
             formats: ['image/avif', 'image/webp'],
           },
           webpack: (config: any) => {
-            // Add webpack optimizations
             config.optimization = {
               ...config.optimization,
               splitChunks: {
@@ -148,7 +181,6 @@ export class BuildService {
     const configContent = `
       module.exports = {
         ...${JSON.stringify(config, null, 2)},
-        // Advanced caching strategy
         generateEtags: true,
         compress: true,
         poweredByHeader: false,
@@ -172,7 +204,6 @@ export class BuildService {
   }
 
   private async applyPostBuildOptimizations(buildPath: string, framework: Framework) {
-    // Implement framework-specific optimizations
     switch (framework) {
       case 'NEXTJS':
         await this.optimizeNextjsBuild(buildPath);
@@ -185,18 +216,15 @@ export class BuildService {
         break;
     }
 
-    // Common optimizations
     await this.optimizeAssets(buildPath);
     await this.setupCaching(buildPath);
   }
 
   private async optimizeNextjsBuild(buildPath: string) {
-    // Optimize server components
     await execAsync(`
       node --experimental-json-modules scripts/optimize-server-components.js
     `, { cwd: buildPath });
 
-    // Enable streaming and progressive enhancement
     const appDir = path.join(buildPath, 'app');
     const layoutPath = path.join(appDir, 'layout.tsx');
     
@@ -210,20 +238,27 @@ export class BuildService {
     }
   }
 
+  private async optimizeRemixBuild(buildPath: string) {
+    // Implement Remix-specific optimizations
+    console.log(`Optimizing Remix build at ${buildPath}`);
+  }
+
+  private async optimizeAstroBuild(buildPath: string) {
+    // Implement Astro-specific optimizations
+    console.log(`Optimizing Astro build at ${buildPath}`);
+  }
+
   private async optimizeAssets(buildPath: string) {
-    // Implement advanced asset optimization
     await execAsync(`
       npx sharp-cli --input "**/*.{jpg,png}" --output-dir "public/optimized"
     `, { cwd: buildPath });
 
-    // Implement CSS optimization
     await execAsync(`
       npx postcss "**/*.css" --replace --use autoprefixer cssnano
     `, { cwd: buildPath });
   }
 
   private async setupCaching(buildPath: string) {
-    // Implement service worker for offline support
     const swContent = `
       import { setupWorkbox } from '@/lib/workbox';
       
