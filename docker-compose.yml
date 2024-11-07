@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-  # Main application
   app:
     build:
       context: .
@@ -10,40 +7,19 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://postgres.iyysshwebciuerqrkmpt:AK2XnTlR5FmmU02c@aws-0-eu-central-2.pooler.supabase.com:5432/postgres
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=rediss://default:AWFjAAIjcDE3MzZjYzg1Y2YyMDk0OWQ0YjIwMGNhNTJlZThkZWRkNXAxMA@artistic-warthog-24931.upstash.io:6379
       - NODE_ENV=development
-      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y2hpZWYtc2VydmFsLTU1LmNsZXJrLmFjY291bnRzLmRldiQ
-      - CLERK_SECRET_KEY=sk_test_ox6Cj6teErvttX7ZrsxRm68t324P9G68KvndaQzEKC
-
-
     volumes:
       - .:/app
       - /app/node_modules
-      - /app/.next
-      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app_network
     depends_on:
-      - db
       - redis
-    networks:
-      - app_network
 
-  # PostgreSQL Database
-  db:
-    image: postgres:14-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=hosting_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app_network
-
-  # Redis for caching
   redis:
     image: redis:alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
@@ -51,25 +27,23 @@ services:
     networks:
       - app_network
 
-  # Nginx reverse proxy
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/logs:/var/log/nginx
-    depends_on:
-      - app
     networks:
       - app_network
+    depends_on:
+      - app
 
 networks:
   app_network:
     driver: bridge
-
 volumes:
-  postgres_data:
-  redis_data: 
+  redis_data:
+  build_cache: 
