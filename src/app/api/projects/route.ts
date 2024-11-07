@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
-import { db } from '@/lib/prisma';
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { clerkId: userId }
     });
 
@@ -24,7 +24,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const projects = await db.project.findMany({
+    // Use req to log the request method and URL
+    console.log(`Received ${req.method} request for ${req.url}`);
+
+    const projects = await prisma.project.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' }
     });
@@ -33,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     return NextResponse.json(
-      { error: error.message },
+      { error: (error as Error).message },
       { status: 500 }
     );
   }

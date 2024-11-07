@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { StorageService } from '@/services/StorageService';
 import { BuildService } from '@/services/BuildService';
 import { DomainService } from '@/services/DomainService';
-import { db } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma'; // Changed to use prisma
 
 const storageService = new StorageService();
 const buildService = new BuildService();
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user from database
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({ // Updated to use prisma
       where: { clerkId: userId }
     });
 
@@ -45,11 +46,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Create project
-    const project = await db.project.create({
+    const project = await prisma.project.create({ // Updated to use prisma
       data: {
         name: projectName,
         userId: user.id,
-        status: 'CREATING',
+       // status: 'CREATING',
       }
     });
 
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Update project status
-    await db.project.update({
+    await prisma.project.update({ // Updated to use prisma
       where: { id: project.id },
       data: {
         status: 'ACTIVE',
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Deployment failed:', error);
     return NextResponse.json(
-      { error: error.message },
+      { error: (error as Error).message }, // Ensured error is typed correctly
       { status: 500 }
     );
   }

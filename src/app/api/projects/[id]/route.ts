@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   req: NextRequest,
@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { clerkId: userId }
     });
 
@@ -27,7 +27,7 @@ export async function GET(
       );
     }
 
-    const project = await db.project.findUnique({
+    const project = await prisma.project.findUnique({
       where: {
         id: params.id,
         userId: user.id
@@ -49,7 +49,7 @@ export async function GET(
 
   } catch (error) {
     return NextResponse.json(
-      { error: error.message },
+      { error: (error as Error).message },
       { status: 500 }
     );
   }
