@@ -61,6 +61,8 @@ export class DeploymentOrchestrator {
         userId,
         status: 'QUEUED' as DeploymentStatus,
         version: Date.now().toString(),
+        buildCommand: 'npm run build',
+        nodeVersion: '18.x',
         environmentId: 'default',
         buildLogs: []
       }

@@ -129,7 +129,7 @@ export class DeploymentService {
         await prisma.deployment.update({
           where: { id: deploymentId },
           data: {
-            deploymentUrl: domain.domain,
+            url: domain.domain,
             status: 'DEPLOYED' as DeploymentStatus
           }
         });

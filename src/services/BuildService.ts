@@ -33,6 +33,19 @@ export class BuildService {
     let deployment;
 
     try {
+      // Get project configuration
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: {
+          nodeVersion: true,
+          buildCommand: true
+        }
+      });
+
+      if (!project) {
+        throw new Error('Project not found');
+      }
+
       // Create a new deployment record
       deployment = await prisma.deployment.create({
         data: {
@@ -40,6 +53,8 @@ export class BuildService {
           userId,
           environmentId,
           status: 'BUILDING',
+          buildCommand: project.buildCommand, // Use project's build command
+          nodeVersion: project.nodeVersion,   // Use project's node version
           buildLogs: [],
           version: Date.now().toString(),
         }

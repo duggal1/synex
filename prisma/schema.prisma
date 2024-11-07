@@ -138,6 +138,8 @@ model Deployment {
 
   url String?
 
+  logs DeploymentLog[]
+
   @@index([projectId])
   @@index([status])
 }
@@ -245,23 +247,44 @@ model EdgeFunctionMetrics {
 }
 
 model ProjectConfig {
-  id              String   @id @default(cuid())
-  projectId       String   @unique
-  project         Project  @relation(fields: [projectId], references: [id])
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id])
+
+  // Rendering configuration
   renderingConfig Json
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
+  framework       Framework
+  strategy        RenderingStrategy @default(STATIC)
+
+  // Optimization status
+  optimizationStatus OptimizationStatus @default(PENDING)
+  lastOptimized      DateTime?
+
+  // File configurations
+  configFiles ProjectFile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
 }
 
 model ProjectFile {
+  id        String         @id @default(cuid())
   projectId String
-  filename  String
-  content   String   @db.Text
-  project   Project  @relation(fields: [projectId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  project   Project        @relation(fields: [projectId], references: [id])
+  configId  String?
+  config    ProjectConfig? @relation(fields: [configId], references: [id])
 
-  @@id([projectId, filename])
+  filename String
+  content  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, filename])
+  @@index([projectId])
+  @@index([configId])
 }
 
 enum SubscriptionStatus {
@@ -330,4 +353,31 @@ model Metrics {
 
   @@index([deploymentId])
   @@index([timestamp])
+}
+
+model DeploymentLog {
+  id           String     @id @default(cuid())
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id])
+  level        String // 'INFO', 'WARN', 'ERROR'
+  message      String
+  timestamp    DateTime   @default(now())
+
+  @@index([deploymentId])
+  @@index([level])
+  @@index([timestamp])
+}
+
+enum OptimizationStatus {
+  PENDING
+  OPTIMIZING
+  OPTIMIZED
+  FAILED
+}
+
+enum RenderingStrategy {
+  STATIC
+  SSR
+  ISR
+  HYBRID
 }
