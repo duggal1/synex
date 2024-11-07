@@ -1,6 +1,15 @@
 import { prisma } from '@/lib/prisma';
 import Docker from 'dockerode';
 import { Redis } from 'ioredis';
+import { logger } from './logger';
+
+interface ContainerStats {
+  cpu: number;
+  memory: number;
+  networkIn?: number;
+  networkOut?: number;
+  timestamp: Date;
+}
 
 export class MetricsCollector {
   private redis: Redis;
@@ -11,23 +20,33 @@ export class MetricsCollector {
     this.docker = new Docker();
   }
 
-  async getContainerStats(containerId: string) {
-    const container = this.docker.getContainer(containerId);
-    const stats = await container.stats({ stream: false });
-    
-    const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
-    const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
-    
-    const cpuPercent = (cpuDelta / systemDelta) * 100;
-    const memoryUsage = stats.memory_stats.usage;
-    const memoryLimit = stats.memory_stats.limit;
-    const memoryPercent = (memoryUsage / memoryLimit) * 100;
+  async getContainerStats(deploymentId: string): Promise<ContainerStats> {
+    try {
+      const container = this.docker.getContainer(deploymentId);
+      const stats = await container.stats({ stream: false });
+      
+      const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
+      const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
+      
+      const cpuPercent = (cpuDelta / systemDelta) * 100;
+      const memoryUsage = stats.memory_stats.usage;
+      const memoryLimit = stats.memory_stats.limit;
+      const memoryPercent = (memoryUsage / memoryLimit) * 100;
 
-    return {
-      cpu: cpuPercent,
-      memory: memoryPercent,
-      timestamp: new Date()
-    };
+      return {
+        cpu: cpuPercent,
+        memory: memoryPercent,
+        networkIn: 0,
+        networkOut: 0,
+        timestamp: new Date()
+      };
+    } catch (error) {
+      logger.error('Failed to get container stats:', {
+        deploymentId,
+        error
+      });
+      throw error;
+    }
   }
 
   async calculateAverageCPU(metrics: Array<{ cpu: number }>) {

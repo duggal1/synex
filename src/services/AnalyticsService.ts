@@ -6,6 +6,16 @@ import { MetricsCollector } from '@/lib/metrics';
 import { logger } from '@/lib/logger';
 import { Request, Response } from 'express';
 
+
+// Add this interface at the top with other interfaces
+interface ContainerStats {
+  cpu: number;
+  memory: number;
+  networkIn?: number;
+  networkOut?: number;
+  timestamp: Date;
+}
+
 interface MetricData {
   cpu: number;
   memory: number;
@@ -42,6 +52,18 @@ interface TimePeriods {
   '7d': number;
   '30d': number;
   [key: string]: number;
+}
+
+interface BuildMetrics {
+  duration: number | null;
+  success: boolean;
+  memory: number | null;
+  cpu: number | null;
+  errors: number;
+  errorLogs: Array<{
+    message: string;
+    timestamp: Date;
+  }>;
 }
 
 export class AnalyticsService {
@@ -102,34 +124,73 @@ export class AnalyticsService {
   }
 
   private async storeRequestMetrics(projectId: string, metrics: RequestMetrics): Promise<void> {
-    await prisma.analytics.create({
-      data: {
-        projectId,
-        type: 'REQUEST',
-        metrics,
-        timestamp: new Date()
-      }
-    });
+    try {
+      // First get the project to get the userId
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true }
+      });
 
-    // Update request count in cache
-    const cacheKey = `metrics:requests:${projectId}`;
-    await this.redis.incr(cacheKey);
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+
+      await prisma.analytics.create({
+        data: {
+          projectId,
+          userId: project.userId,
+          type: 'REQUEST',
+          metrics: metrics as any,
+          timestamp: new Date()
+        }
+      });
+
+      // Update request count in cache
+      const cacheKey = `metrics:requests:${projectId}`;
+      await this.redis.incr(cacheKey);
+    } catch (error) {
+      logger.error('Failed to store request metrics:', {
+        projectId,
+        error
+      });
+      throw error;
+    }
   }
 
   private async updateResponseMetrics(projectId: string, metrics: ResponseMetrics): Promise<void> {
-    await prisma.analytics.create({
-      data: {
-        projectId,
-        type: 'RESPONSE',
-        metrics,
-        timestamp: new Date()
+    try {
+      // Get the project to fetch userId
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true }
+      });
+  
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
       }
-    });
-
-    // Update response time stats in cache
-    const cacheKey = `metrics:response:${projectId}`;
-    await this.redis.lpush(cacheKey, metrics.responseTime);
-    await this.redis.ltrim(cacheKey, 0, 999); // Keep last 1000 response times
+  
+      await prisma.analytics.create({
+        data: {
+          projectId,
+          userId: project.userId,
+          type: 'RESPONSE',
+          metrics: metrics as any,
+          timestamp: new Date()
+        }
+      });
+  
+      // Update response time stats in cache
+      const cacheKey = `metrics:response:${projectId}`;
+      await this.redis.lpush(cacheKey, metrics.responseTime);
+      await this.redis.ltrim(cacheKey, 0, 999); // Keep last 1000 response times
+    } catch (error) {
+      logger.error('Failed to update response metrics:', {
+        projectId,
+        metrics,
+        error
+      });
+      throw error;
+    }
   }
 
   private async collectBuildMetrics(deploymentId: string) {
@@ -143,6 +204,11 @@ export class AnalyticsService {
         logs: {
           where: {
             level: 'ERROR'
+          },
+          select: {
+            id: true,
+            message: true,
+            timestamp: true
           }
         }
       }
@@ -157,29 +223,52 @@ export class AnalyticsService {
       success: deployment.status === 'DEPLOYED',
       memory: deployment.memory,
       cpu: deployment.cpu,
-      errors: deployment.logs?.length || 0
+      errors: deployment.logs?.length || 0,
+      errorLogs: deployment.logs?.map((log: any) => ({
+        message: log.message,
+        timestamp: log.timestamp
+      }))
     };
   }
-
   private async storeBuildMetrics(
     projectId: string, 
     deploymentId: string, 
-    metrics: any
-  ) {
-    await prisma.analytics.create({
-      data: {
+    metrics: BuildMetrics
+  ): Promise<void> {
+    try {
+      // First get the project to get the userId
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true }
+      });
+  
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+  
+      await prisma.analytics.create({
+        data: {
+          projectId,
+          deploymentId,
+          userId: project.userId,
+          type: 'BUILD',
+          metrics: metrics as any,
+          timestamp: new Date()
+        }
+      });
+  
+      // Cache recent metrics
+      const cacheKey = `metrics:build:${projectId}`;
+      await this.redis.lpush(cacheKey, JSON.stringify(metrics));
+      await this.redis.ltrim(cacheKey, 0, 99); // Keep last 100 builds
+    } catch (error) {
+      logger.error('Failed to store build metrics:', {
         projectId,
         deploymentId,
-        type: 'BUILD',
-        metrics: metrics,
-        timestamp: new Date()
-      }
-    });
-
-    // Cache recent metrics
-    const cacheKey = `metrics:build:${projectId}`;
-    await this.redis.lpush(cacheKey, JSON.stringify(metrics));
-    await this.redis.ltrim(cacheKey, 0, 99); // Keep last 100 builds
+        error
+      });
+      throw error;
+    }
   }
 
   private async startRealTimeMonitoring(projectId: string, deploymentId: string) {
@@ -202,53 +291,81 @@ export class AnalyticsService {
   }
 
   private async collectRealTimeMetrics(deploymentId: string): Promise<MetricData> {
-    const container = await this.metricsCollector.getContainerStats(deploymentId);
+    const container: ContainerStats = await this.metricsCollector.getContainerStats(deploymentId);
     
     return {
-      cpu: container.cpu_stats.cpu_usage.total_usage,
-      memory: container.memory_stats.usage,
+      cpu: container.cpu,
+      memory: container.memory,
       requests: await this.getRequestCount(deploymentId),
       responseTime: await this.getAverageResponseTime(deploymentId),
       errors: await this.getErrorCount(deploymentId),
-      bandwidth: container.networks.eth0.rx_bytes + container.networks.eth0.tx_bytes
+      bandwidth: (container.networkIn || 0) + (container.networkOut || 0)
     };
   }
-
   private async storeRealTimeMetrics(
     projectId: string, 
     deploymentId: string, 
     metrics: MetricData
-  ) {
-    // Store in database
-    await prisma.analytics.create({
-      data: {
+  ): Promise<void> {
+    try {
+      // Get the project to fetch userId
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true }
+      });
+  
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+  
+      // Store in database
+      await prisma.analytics.create({
+        data: {
+          projectId,
+          deploymentId,
+          userId: project.userId,
+          type: 'REALTIME',
+          metrics: JSON.stringify(metrics),
+          timestamp: new Date()
+        }
+      });
+  
+      // Update cache for quick access
+      const cacheKey = `metrics:realtime:${deploymentId}`;
+      await this.redis.set(cacheKey, JSON.stringify(metrics), 'EX', 60);
+    } catch (error) {
+      logger.error('Failed to store realtime metrics:', {
         projectId,
         deploymentId,
-        type: 'REALTIME',
-        metrics: JSON.stringify(metrics),
-        timestamp: new Date()
-      }
-    });
-
-    // Update cache for quick access
-    const cacheKey = `metrics:realtime:${deploymentId}`;
-    await this.redis.set(cacheKey, JSON.stringify(metrics), 'EX', 60);
+        error
+      });
+      throw error;
+    }
   }
-
-  async getProjectMetrics(projectId: string, period: string = '24h') {
-    const metrics = await prisma.analytics.findMany({
-      where: {
+  
+  async getProjectMetrics(projectId: string, period: string = '24h'): Promise<any> {
+    try {
+      const metrics = await prisma.analytics.findMany({
+        where: {
+          projectId,
+          timestamp: {
+            gte: new Date(Date.now() - this.getPeriodInMs(period))
+          }
+        },
+        orderBy: { timestamp: 'asc' }
+      });
+  
+      return this.aggregateMetrics(metrics);
+    } catch (error) {
+      logger.error('Failed to get project metrics:', {
         projectId,
-        timestamp: {
-          gte: new Date(Date.now() - this.getPeriodInMs(period))
-        }
-      },
-      orderBy: { timestamp: 'asc' }
-    });
-
-    return this.aggregateMetrics(metrics);
+        period,
+        error
+      });
+      throw error;
+    }
   }
-
+  
   private getPeriodInMs(period: string): number {
     const periods: TimePeriods = {
       '1h': 60 * 60 * 1000,
@@ -258,7 +375,6 @@ export class AnalyticsService {
     };
     return periods[period] || periods['24h'];
   }
-
   private aggregateMetrics(metrics: any[]) {
     return {
       requests: {
@@ -312,27 +428,41 @@ export class AnalyticsService {
     const count = await this.redis.get(cacheKey);
     return parseInt(count || '0');
   }
-
   async trackResourceUsage(projectId: string, deploymentId: string): Promise<void> {
     try {
-      const stats = await this.metricsCollector.getContainerStats(deploymentId);
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { userId: true }
+      });
+
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+
+      const stats: ContainerStats = await this.metricsCollector.getContainerStats(deploymentId);
       
       await prisma.analytics.create({
         data: {
           projectId,
           deploymentId,
+          userId: project.userId,
           type: 'RESOURCE',
           metrics: {
-            cpu: stats.cpu_stats.cpu_usage.total_usage,
-            memory: stats.memory_stats.usage,
-            networkIn: stats.networks?.eth0?.rx_bytes || 0,
-            networkOut: stats.networks?.eth0?.tx_bytes || 0
+            cpu: stats.cpu,
+            memory: stats.memory,
+            networkIn: stats.networkIn || 0,
+            networkOut: stats.networkOut || 0,
           },
           timestamp: new Date()
         }
       });
     } catch (error) {
-      logger.error('Resource usage tracking failed:', error);
+      logger.error('Resource usage tracking failed:', {
+        projectId,
+        deploymentId,
+        error
+      });
+      throw error;
     }
   }
-} 
+  }

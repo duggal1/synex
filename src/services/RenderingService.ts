@@ -4,7 +4,13 @@ import { Framework } from '@/types/index';
 import { logger } from '@/lib/logger';
 
 // Configuration interfaces for each framework
-interface NextJSConfig {
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
+interface BaseConfig {
+  [key: string]: JsonValue;
+}
+
+interface NextJSConfig extends BaseConfig {
   serverComponents: boolean;
   streaming: boolean;
   suspense: boolean;
@@ -21,7 +27,7 @@ interface NextJSConfig {
   };
 }
 
-interface RemixConfig {
+interface RemixConfig extends BaseConfig {
   serverBundling: 'minimal' | 'optimal' | 'aggressive';
   clientBundling: 'minimal' | 'optimal' | 'aggressive';
   prefetch: 'none' | 'intent' | 'all';
@@ -33,7 +39,7 @@ interface RemixConfig {
   compression: boolean;
 }
 
-interface AstroConfig {
+interface AstroConfig extends BaseConfig {
   prerender: boolean;
   prefetch: boolean;
   islandArchitecture: boolean;
@@ -149,39 +155,25 @@ export class RenderingService {
   private async setupNextJSConfig(projectId: string, config: NextJSConfig): Promise<void> {
     try {
       // Update next.config.js
-      await this.updateProjectConfig(projectId, 'next.config.js', {
-        experimental: {
-          serverComponents: config.serverComponents,
-          streaming: config.streaming,
-        },
-        reactStrictMode: true,
-        poweredByHeader: false,
-        compress: true,
-        generateEtags: true,
-        incrementalCaching: config.incrementalCache,
-        pageExtensions: ['tsx', 'ts'],
-        typescript: {
-          ignoreBuildErrors: false,
-        },
-        images: {
-          formats: ['image/avif', 'image/webp'],
-          deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-        },
-      });
+      await this.updateProjectConfig(projectId, 'next.config.js', config);
 
       // Update rendering strategies in database
       await prisma.projectConfig.upsert({
         where: { projectId },
         update: {
-          renderingConfig: config
+          renderingConfig: config as JsonValue,
+          framework: 'NEXTJS',
+          strategy: this.determineRenderingStrategy(config)
         },
         create: {
           projectId,
-          renderingConfig: config
+          renderingConfig: config as JsonValue,
+          framework: 'NEXTJS',
+          strategy: this.determineRenderingStrategy(config)
         }
       });
     } catch (error) {
-      logger.error(`Failed to setup Next.js config for project ${projectId}:`, error as Error);
+      logger.error(`Failed to setup Next.js config for project ${projectId}:`, error);
       throw error;
     }
   }
@@ -189,28 +181,25 @@ export class RenderingService {
   private async setupRemixConfig(projectId: string, config: RemixConfig): Promise<void> {
     try {
       // Update remix.config.js
-      await this.updateProjectConfig(projectId, 'remix.config.js', {
-        serverBuildTarget: "vercel",
-        server: config.serverBundling,
-        browserBuildStrategy: config.clientBundling,
-        devServerBroadcastDelay: 1000,
-        ignoredRouteFiles: [".*"],
-        serverDependenciesToBundle: "all",
-      });
+      await this.updateProjectConfig(projectId, 'remix.config.js', config);
 
       // Update rendering strategies in database
       await prisma.projectConfig.upsert({
         where: { projectId },
         update: {
-          renderingConfig: config
+          renderingConfig: config as JsonValue,
+          framework: 'REMIX',
+          strategy: this.determineRenderingStrategy(config)
         },
         create: {
           projectId,
-          renderingConfig: config
+          renderingConfig: config as JsonValue,
+          framework: 'REMIX',
+          strategy: this.determineRenderingStrategy(config)
         }
       });
     } catch (error) {
-      logger.error(`Failed to setup Remix config for project ${projectId}:`, error as Error);
+      logger.error(`Failed to setup Remix config for project ${projectId}:`, error);
       throw error;
     }
   }
@@ -218,40 +207,25 @@ export class RenderingService {
   private async setupAstroConfig(projectId: string, config: AstroConfig): Promise<void> {
     try {
       // Update astro.config.mjs
-      await this.updateProjectConfig(projectId, 'astro.config.mjs', {
-        output: config.prerender ? 'static' : 'server',
-        prefetch: config.prefetch,
-        experimental: {
-          islands: config.islandArchitecture,
-          partialHydration: config.partialHydration
-        },
-        compressHTML: config.compression.html,
-        build: {
-          compress: config.compression.assets,
-          inlineStylesheets: "auto"
-        },
-        image: {
-          service: "@astrojs/image",
-          serviceConfig: {
-            quality: config.imageOptimization.quality,
-            formats: config.imageOptimization.formats
-          }
-        }
-      });
+      await this.updateProjectConfig(projectId, 'astro.config.mjs', config);
 
       // Update rendering strategies in database
       await prisma.projectConfig.upsert({
         where: { projectId },
         update: {
-          renderingConfig: config
+          renderingConfig: config as JsonValue,
+          framework: 'ASTRO',
+          strategy: this.determineRenderingStrategy(config)
         },
         create: {
           projectId,
-          renderingConfig: config
+          renderingConfig: config as JsonValue,
+          framework: 'ASTRO',
+          strategy: this.determineRenderingStrategy(config)
         }
       });
     } catch (error) {
-      logger.error(`Failed to setup Astro config for project ${projectId}:`, error as Error);
+      logger.error(`Failed to setup Astro config for project ${projectId}:`, error);
       throw error;
     }
   }
@@ -293,5 +267,12 @@ export class RenderingService {
       logger.error(`Failed to update optimization status for project ${projectId}:`, error as Error);
       throw error;
     }
+  }
+
+  private determineRenderingStrategy(config: NextJSConfig | RemixConfig | AstroConfig): RenderingStrategy {
+    if ('renderingStrategies' in config) {
+      return config.renderingStrategies.default.toUpperCase() as RenderingStrategy;
+    }
+    return 'STATIC';
   }
 } 
