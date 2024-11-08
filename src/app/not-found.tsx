@@ -1,41 +1,36 @@
-
 import { Button } from "@/components/ui/button";
-import Link from 'next/link';
-
+import Link from "next/link";
+//
 const NotFound = () => {
-    return (
-        <main className="relative flex flex-col justify-center items-center px-4">
+  return (
+    <main className="relative flex flex-col justify-center items-center h-screen px-4 bg-gradient-to-br from-blue-400 to-purple-500">
+      <div className="flex flex-col justify-center items-center max-w-xl mx-auto text-center">
+        <span className="px-3.5 py-1 mb-5 font-medium text-xl text-white bg-black/20 rounded-md">
+          404
+        </span>
+        <h1 className="mt-2 text-6xl lg:text-9xl font-bold text-white md:text-8xl tracking-tight">
+          Page Not Found
+        </h1>
+        <p className="mt-5 text-base font-medium text-neutral-300 ">
+          The page you are looking for does not exist. But don&apos;t worry, you can{" "}
+          <Link href="/dashboard" className="text-white underline hover:to-blue-800 hover:underline">
+            go to the dashboard
+          </Link>{" "}
+          or{" "}
+          <Link href="/blogs" className="text-white underline ">
+            check out our blogs.
+          </Link>
+          <span className=" -mt-8 ">
+            ✨
+          </span>
+          
+        </p>
+        <Link href="/" className="block mt-8">
+          <Button>Back to Homepage</Button>
+        </Link>
+      </div>
+    </main>
+  );
+};
 
-
-            <div className="flex flex-col justify-center items-center mx-auto h-screen">
-
-                <div className="flex flex-col justify-center items-center h-full">
-                    <span className="bg-gradient-to-br from-violet-400 to-purple-600 px-3.5 py-1 rounded-md font-medium text-neutral-50 text-sm not-found">
-                        404
-                    </span>
-                    <h1 className="mt-5 font-bold text-3xl text-neutral-50 md:text-5xl">
-                        Not Found
-                    </h1>
-                    <p className="mx-auto mt-5 max-w-xl font-medium text-base text-center text-neutral-400">
-                        The page you are looking for does not exist. <br /> But don&apos;t worry, we&apos;ve got you covered. You can{" "}
-                        <Link href="/resources/help" className="text-foreground">
-                            contact us
-                        </Link>
-                        .
-                    </p>
-                    <Link href="/">
-                        <Button className="mt-8">
-                            Back to homepage
-                        </Button>
-                    </Link>
-                </div>
-
-            </div>
-
-        
-
-        </main>
-    )
-}
-
-export default NotFound
+export default NotFound;
