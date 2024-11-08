@@ -69,11 +69,12 @@ model Project {
 
   productionDeploymentId String?
 
-  edgeFunctions EdgeFunction[]
-  storage       ProjectStorage[]
-  config        ProjectConfig?
-  files         ProjectFile[]
-  cacheHeaders  Json?
+  edgeFunctions      EdgeFunction[]
+  storage            ProjectStorage[]
+  config             ProjectConfig?
+  files              ProjectFile[]
+  cacheHeaders       Json?
+  PerformanceMetrics PerformanceMetrics[]
 
   @@index([userId])
   @@index([status])
@@ -266,8 +267,12 @@ model ProjectConfig {
   // File configurations
   configFiles ProjectFile[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  performanceConfig Json?
+  cacheConfig       Json?
+  cdnConfig         Json?
+  autoScalingConfig Json?
 
   @@index([projectId])
 }
@@ -383,4 +388,16 @@ enum RenderingStrategy {
   SSR
   ISR
   HYBRID
+}
+
+// Add this model for performance metrics
+model PerformanceMetrics {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  metrics   Json
+  timestamp DateTime @default(now())
+
+  @@index([projectId])
+  @@index([timestamp])
 }
