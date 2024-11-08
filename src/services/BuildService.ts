@@ -61,6 +61,7 @@ export class BuildService {
       });
 
       const buildPath = path.join(this.buildDir, projectId);
+      const startTime = Date.now();
       
       // Optimize build configuration based on framework
       const optimizedConfig = await this.generateBuildConfig(config.framework);
@@ -86,16 +87,22 @@ export class BuildService {
         }
       });
 
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      // Return properly typed BuildResult
       return {
         buildId: deployment.id,
-        success: true,
-        duration: Date.now() - new Date(deployment.createdAt).getTime(),
+        duration: duration,
         logs: deployment.buildLogs as string[],
+        cached: false,
+        outputPath: buildPath,
+        env: { NODE_ENV: process.env.NODE_ENV || 'production' },
+        cacheKey: `${projectId}-${deployment.version}`,
         assets: {
-          static: [],  // Add actual asset paths
-          server: []   // Add actual server files
+          static: await this.getStaticAssets(buildPath),
+          server: await this.getServerAssets(buildPath)
         },
-        buildTime: Date.now() - new Date(deployment.createdAt).getTime()
+        buildTime: duration
       };
 
     } catch (error) {
@@ -293,5 +300,40 @@ export class BuildService {
       path.join(buildPath, 'sw.js'),
       swContent
     );
+  }
+
+  // Add helper methods to get assets
+  private async getStaticAssets(buildPath: string): Promise<string[]> {
+    const staticDir = path.join(buildPath, 'public');
+    if (await fs.pathExists(staticDir)) {
+      const files = await this.findFiles(staticDir, ['.js', '.css', '.jpg', '.png', '.svg']);
+      return files.map(file => path.relative(buildPath, file));
+    }
+    return [];
+  }
+
+  private async getServerAssets(buildPath: string): Promise<string[]> {
+    const serverDir = path.join(buildPath, '.next/server');
+    if (await fs.pathExists(serverDir)) {
+      const files = await this.findFiles(serverDir, ['.js']);
+      return files.map(file => path.relative(buildPath, file));
+    }
+    return [];
+  }
+
+  private async findFiles(dir: string, extensions: string[]): Promise<string[]> {
+    const files: string[] = [];
+    const items = await fs.readdir(dir, { withFileTypes: true });
+    
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory()) {
+        files.push(...await this.findFiles(fullPath, extensions));
+      } else if (extensions.some(ext => item.name.endsWith(ext))) {
+        files.push(fullPath);
+      }
+    }
+    
+    return files;
   }
 } 

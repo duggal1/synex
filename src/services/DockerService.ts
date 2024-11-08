@@ -19,6 +19,9 @@ interface ContainerConfig {
 }
 
 export class DockerService {
+  createContainer(arg0: { image: string; name: string; config: { Memory: number; NanoCpus: number; NetworkMode: string; Ports: { '80/tcp': { HostPort: string; }[]; '443/tcp': { HostPort: string; }[]; }; Volumes: { '/usr/local/etc/haproxy': {}; }; HealthCheck: { Test: string[]; Interval: number; Timeout: number; Retries: number; }; }; }) {
+      throw new Error('Method not implemented.');
+  }
   private docker: Docker;
 
   constructor() {

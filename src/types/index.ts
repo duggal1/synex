@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Project {
   id: string;
   name: string;
@@ -29,9 +30,9 @@ export interface BuildConfig {
   buildCommand: string;
   nodeVersion: string;
   env?: Record<string, string>;
-  buildOptions?: {
-    cache?: boolean;
+  optimization?: {
     minify?: boolean;
+    compress?: boolean;
     sourceMaps?: boolean;
   };
 }
@@ -54,17 +55,56 @@ export type DeploymentStatus =
   | 'FAILED'
   | 'CANCELLED';
 
-export interface BuildResult {
-  env: any;
-  buildId: string;
-  success: boolean;
-  duration: number;
-  logs: string[];
-  buildTime: number;
-  assets: {
-    static: string[];
-    server: string[];
-  };
+// Base interface for build results
+export interface BaseBuildResult {
+    buildId: string;
+    buildTime: number;
+    duration: number;
+    logs: string[];
+    assets: {
+        static: string[];
+        server: string[];
+    };
+    env: Record<string, string>;
+    cacheKey: string;
+}
+
+// Interface for cached build results
+export interface CachedBuildResult extends BaseBuildResult {
+    cached: true;
+    outputPath: string;
+}
+
+// Interface for fresh build results
+export interface FreshBuildResult extends BaseBuildResult {
+    cached: false;
+    outputPath: string;
+    optimizationStats?: Record<string, any>;
+}
+
+// Union type for all possible build results
+export type BuildResult = CachedBuildResult | FreshBuildResult;
+
+export interface OptimizationConfig {
+  minify: boolean;
+  compress: boolean;
+  sourceMaps: boolean;
+  imageOptimization: boolean;
+  bundleAnalysis: boolean;
+}
+
+export interface BundleAnalysis {
+  total: number;
+  pages: Record<string, number>;
+  images: number;
+  compressed: number;
+  cacheable: number;
+  compressedSize: number;
+  originalSize: number;
+  compressionRatio: number;
+  hydrationSize?: number;
+  staticSize?: number;
+  imageStats?: Record<string, any>;
 }
 
 export interface DomainConfig {

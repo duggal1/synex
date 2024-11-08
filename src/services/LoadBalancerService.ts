@@ -32,6 +32,9 @@ interface LoadBalancerConfig {
 }
 
 export class LoadBalancerService extends EventEmitter {
+  setupGlobalRouting(arg0: { projectId: any; container: any; algorithm: any; healthCheck: { path: string; interval: number; timeout: number; unhealthyThreshold: number; }; ssl: { enabled: boolean; provider: string; }; }) {
+      throw new Error('Method not implemented.');
+  }
   private redis: Redis;
   private metricsCollector: MetricsCollector;
   private healthCheckIntervals: Map<string, NodeJS.Timer>;
