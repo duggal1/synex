@@ -75,6 +75,7 @@ model Project {
   files              ProjectFile[]
   cacheHeaders       Json?
   PerformanceMetrics PerformanceMetrics[]
+  EdgeMetrics        EdgeMetrics[]
 
   @@index([userId])
   @@index([status])
@@ -274,6 +275,8 @@ model ProjectConfig {
   cdnConfig         Json?
   autoScalingConfig Json?
 
+  edgeConfig Json?
+
   @@index([projectId])
 }
 
@@ -320,6 +323,7 @@ enum Framework {
   NEXTJS
   REMIX
   ASTRO
+  STATIC
 }
 
 enum DomainType {
@@ -399,5 +403,23 @@ model PerformanceMetrics {
   timestamp DateTime @default(now())
 
   @@index([projectId])
+  @@index([timestamp])
+}
+
+// Add EdgeMetrics model
+model EdgeMetrics {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id])
+  region       String
+  hits         Int      @default(0)
+  bandwidth    Float    @default(0)
+  latency      Float    @default(0)
+  errorRate    Float    @default(0)
+  cacheHitRate Float    @default(0)
+  timestamp    DateTime @default(now())
+
+  @@index([projectId])
+  @@index([region])
   @@index([timestamp])
 }
