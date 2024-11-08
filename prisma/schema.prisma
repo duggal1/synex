@@ -34,10 +34,11 @@ model User {
 }
 
 model Project {
-  id     String @id @default(cuid())
-  name   String
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  id           String        @id @default(cuid())
+  name         String
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  envVariables EnvVariable[]
 
   // Project configuration
   framework     Framework @default(NEXTJS)
@@ -169,6 +170,8 @@ model EnvVariable {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+  Project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
 
   @@unique([environmentId, key])
 }
