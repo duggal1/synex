@@ -55,6 +55,7 @@ export type DeploymentStatus =
   | 'CANCELLED';
 
 export interface BuildResult {
+  env: any;
   buildId: string;
   success: boolean;
   duration: number;
