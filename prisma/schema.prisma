@@ -15,6 +15,8 @@ model User {
   emailVerified DateTime?
   image         String?
   apiKey        String    @unique @default(uuid())
+  lastLoginAt   DateTime?
+  status        UserStatus @default(ACTIVE)
 
   // Subscription and billing
   subscriptionId     String?
@@ -31,13 +33,15 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@index([subscriptionStatus])
+  @@index([email])
+  @@index([clerkId])
 }
 
 model Project {
   id           String        @id @default(cuid())
   name         String
   userId       String
-  user         User          @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   envVariables EnvVariable[]
 
   // Project configuration
@@ -85,9 +89,9 @@ model Domain {
   id        String  @id @default(cuid())
   domain    String  @unique
   projectId String
-  project   Project @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId    String
-  user      User    @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Domain configuration
   type     DomainType @default(SUBDOMAIN)
@@ -107,9 +111,9 @@ model Domain {
 model Deployment {
   id        String  @id @default(cuid())
   projectId String
-  project   Project @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId    String
-  user      User    @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Deployment details
   buildCommand  String
@@ -194,11 +198,11 @@ model DnsRecord {
 model Analytics {
   id           String      @id @default(cuid())
   projectId    String
-  project      Project     @relation(fields: [projectId], references: [id])
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   deploymentId String?
-  deployment   Deployment? @relation(fields: [deploymentId], references: [id])
+  deployment   Deployment? @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
   userId       String
-  user         User        @relation(fields: [userId], references: [id])
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Analytics data
   type      String // 'REQUEST', 'RESPONSE', 'BUILD', 'RESOURCE', 'REALTIME'
@@ -422,4 +426,10 @@ model EdgeMetrics {
   @@index([projectId])
   @@index([region])
   @@index([timestamp])
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
 }

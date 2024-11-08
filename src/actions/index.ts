@@ -1,4 +1,4 @@
-import getAuthStatus from "./get-auth-status";
+import { getAuthStatus }from "./get-auth-status";
 
 export {
     getAuthStatus,

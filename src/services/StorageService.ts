@@ -182,7 +182,7 @@ export class StorageService {
   }
 
   async deleteProject(fileName: string, projectId: string): Promise<void> {
-    try {
+    try { 
       // Validate access permission
       await this.validateAccess(fileName, projectId);
 

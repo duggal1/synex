@@ -2,81 +2,115 @@
 
 import { prisma } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
+import { logger } from "@/lib/logger";
 
-const getAuthStatus = async () => {
+export const getAuthStatus = async () => {
     try {
-        const user = await currentUser();
+        const clerkUser = await currentUser();
 
-        if (!user?.id) {
+        if (!clerkUser?.id) {
+            logger.warn("No user found in Clerk session");
             return { success: false, error: "User not found" };
         }
 
-        // Get the email address (handle both primary and OAuth cases)
-        const emailAddress = user.primaryEmailAddress?.emailAddress || 
-                           user.emailAddresses[0]?.emailAddress;
+        const emailAddress = clerkUser.primaryEmailAddress?.emailAddress || 
+                           clerkUser.emailAddresses[0]?.emailAddress;
 
         if (!emailAddress) {
+            logger.warn(`No email found for user ${clerkUser.id}`);
             return { success: false, error: "No email address found" };
         }
 
-        const clerkId = user.id;
-
-        // Try to find existing user
-        const existingUser = await prisma.user.findFirst({
+        // First check if user exists
+        const existingUser = await prisma.user.findUnique({
             where: {
-                OR: [
-                    { clerkId },
-                    { email: emailAddress }
-                ]
-            },
+                email: emailAddress,
+            }
         });
 
-        if (!existingUser) {
-            // Create new user
-            const newUser = await prisma.user.create({
-                data: {
-                    clerkId,
-                    email: emailAddress,
-                    name: user.fullName || 
-                          user.firstName || 
-                          user.username || 
-                          emailAddress.split('@')[0],
-                    image: user.imageUrl,
-                },
-            });
-
+        if (existingUser && existingUser.clerkId !== clerkUser.id) {
+            logger.warn(`User tried to sign up with existing email: ${emailAddress}`);
             return { 
-                success: true,
-                user: newUser
+                success: false, 
+                error: "An account with this email already exists. Please sign in instead." 
             };
         }
 
-        // Update existing user if needed
-        const updatedUser = await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-                clerkId,
+        // Try to find or create user in database using upsert
+        const user = await prisma.user.upsert({
+            where: {
                 email: emailAddress,
-                name: user.fullName || 
-                      user.firstName || 
-                      user.username || 
-                      existingUser.name,
-                image: user.imageUrl || existingUser.image,
             },
+            update: {
+                clerkId: clerkUser.id,
+                name: clerkUser.fullName || clerkUser.firstName || null,
+                image: clerkUser.imageUrl,
+                lastLoginAt: new Date(),
+            },
+            create: {
+                clerkId: clerkUser.id,
+                email: emailAddress,
+                name: clerkUser.fullName || clerkUser.firstName || null,
+                image: clerkUser.imageUrl,
+                lastLoginAt: new Date(),
+                subscriptionStatus: 'FREE',
+                usageLimit: 10,
+                projects: {
+                    create: {
+                        name: 'My First Project',
+                        framework: 'NEXTJS',
+                        buildCommand: 'npm run build',
+                        startCommand: 'npm start',
+                        nodeVersion: '18.x',
+                        status: 'ACTIVE',
+                        environments: {
+                            create: {
+                                name: 'production',
+                                variables: {
+                                    create: [
+                                        {
+                                            key: 'NODE_ENV',
+                                            value: 'production'
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            include: {
+                projects: {
+                    include: {
+                        environments: true
+                    }
+                }
+            }
         });
 
+        logger.info(`User authenticated: ${user.id}`);
+        logger.info(`Projects count: ${user.projects.length}`);
+        logger.info(`First project: ${user.projects[0]?.name}`);
+        
         return {
             success: true,
-            user: updatedUser
+            user
         };
 
     } catch (error) {
-        console.error("Error in getAuthStatus:", error);
+        logger.error("Error in getAuthStatus:", error);
+        
+        // Check if it's a unique constraint violation
+        if (error instanceof Error && error.message.includes('Unique constraint')) {
+            return { 
+                success: false, 
+                error: "An account with this email already exists. Please sign in instead." 
+            };
+        }
+
         return { 
             success: false, 
             error: "Failed to verify auth status" 
         };
     }
 };
-
-export default getAuthStatus;
