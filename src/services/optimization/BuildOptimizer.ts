@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { BuildService } from '../BuildService';
-import { Framework } from '@/types/index';
+import { Framework, FrameworkType } from '@/types/index';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import path from 'path';
@@ -12,6 +12,7 @@ import { BuildPipeline } from '../BuildPipeline';
 import { MetricsCollector } from '@/lib/metrics';
 import { Prisma } from '@prisma/client';
 
+                        
 interface BuildOptimizationConfig {
   treeshaking: {
     enabled: boolean;
@@ -192,7 +193,7 @@ export class BuildOptimizer {
         incrementalCache: config.incrementalCache,
         persistentCache: config.persistentCache,
         renderingConfig: {},
-        framework: 'default'
+        framework: Framework.NEXTJS
       },
       update: {
         buildCache: config.buildCache,
@@ -215,7 +216,9 @@ export class BuildOptimizer {
       where: { projectId },
       create: {
         projectId,
-        buildSettings: buildSettings as Prisma.JsonObject
+        buildSettings: buildSettings as Prisma.JsonObject,
+        renderingConfig: {},
+        framework: Framework.NEXTJS
       },
       update: {
         buildSettings: buildSettings as Prisma.JsonObject
@@ -266,7 +269,10 @@ export class BuildOptimizer {
     framework: Framework
   ): Promise<BuildOptimizationConfig> {
     const projectConfig = await prisma.projectConfig.findUnique({
-      where: { projectId }
+      where: { projectId },
+      select: {
+        buildSettings: true
+      }
     });
 
     const defaultConfig: BuildOptimizationConfig = {
@@ -301,13 +307,14 @@ export class BuildOptimizer {
         persistentCache: true
       }
     };
-    if (!projectConfig?.buildConfig?.optimization) {
+
+    const buildSettings = projectConfig?.buildSettings as { optimization?: BuildOptimizationConfig };
+    if (!buildSettings?.optimization) {
       return defaultConfig;
     }
 
-    return projectConfig.buildConfig.optimization as BuildOptimizationConfig;
+    return buildSettings.optimization;
   }
-
   private async updateOptimizationStatus(
     projectId: string,
     data: {

@@ -21,7 +21,18 @@ export interface Deployment {
   environmentId: string;
 }
 
-export type Framework = 'NEXTJS' | 'REMIX' | 'ASTRO';
+// Define Framework as an enum
+export enum Framework {
+  NEXTJS = 'NEXTJS',
+  REMIX = 'REMIX',
+  ASTRO = 'ASTRO',
+  STATIC = 'STATIC',
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
+  DEFAULT = 'NEXTJS' // Default value
+}
+
+// You can also use it as a type
+export type FrameworkType = keyof typeof Framework;
 
 export interface BuildConfig {
   projectId: string;
