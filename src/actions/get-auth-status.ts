@@ -7,12 +7,14 @@ import { logger } from "@/lib/logger";
 export const getAuthStatus = async () => {
     try {
         const clerkUser = await currentUser();
+        logger.info("Clerk user:", clerkUser); // Debug log
 
         if (!clerkUser?.id) {
             logger.warn("No user found in Clerk session");
             return { success: false, error: "User not found" };
         }
 
+        // Get primary email
         const emailAddress = clerkUser.primaryEmailAddress?.emailAddress || 
                            clerkUser.emailAddresses[0]?.emailAddress;
 
@@ -21,96 +23,63 @@ export const getAuthStatus = async () => {
             return { success: false, error: "No email address found" };
         }
 
-        // First check if user exists
-        const existingUser = await prisma.user.findUnique({
-            where: {
-                email: emailAddress,
-            }
-        });
+        try {
+            // First try to find the user
+            let user = await prisma.user.findUnique({
+                where: { clerkId: clerkUser.id },
+                include: { projects: true }
+            });
 
-        if (existingUser && existingUser.clerkId !== clerkUser.id) {
-            logger.warn(`User tried to sign up with existing email: ${emailAddress}`);
-            return { 
-                success: false, 
-                error: "An account with this email already exists. Please sign in instead." 
-            };
-        }
-
-        // Try to find or create user in database using upsert
-        const user = await prisma.user.upsert({
-            where: {
-                email: emailAddress,
-            },
-            update: {
-                clerkId: clerkUser.id,
-                name: clerkUser.fullName || clerkUser.firstName || null,
-                image: clerkUser.imageUrl,
-                lastLoginAt: new Date(),
-            },
-            create: {
-                clerkId: clerkUser.id,
-                email: emailAddress,
-                name: clerkUser.fullName || clerkUser.firstName || null,
-                image: clerkUser.imageUrl,
-                lastLoginAt: new Date(),
-                subscriptionStatus: 'FREE',
-                usageLimit: 10,
-                projects: {
-                    create: {
-                        name: 'My First Project',
-                        framework: 'NEXTJS',
-                        buildCommand: 'npm run build',
-                        startCommand: 'npm start',
-                        nodeVersion: '18.x',
-                        status: 'ACTIVE',
-                        environments: {
+            if (!user) {
+                // If user doesn't exist, create new user
+                user = await prisma.user.create({
+                    data: {
+                        clerkId: clerkUser.id,
+                        email: emailAddress,
+                        name: clerkUser.firstName || null,
+                        image: clerkUser.imageUrl,
+                        lastLoginAt: new Date(),
+                        subscriptionStatus: 'FREE',
+                        usageLimit: 10,
+                        projects: {
                             create: {
-                                name: 'production',
-                                variables: {
-                                    create: [
-                                        {
-                                            key: 'NODE_ENV',
-                                            value: 'production'
-                                        }
-                                    ]
-                                }
+                                name: 'My First Project',
+                                framework: 'NEXTJS',
+                                buildCommand: 'npm run build',
+                                startCommand: 'npm start',
+                                nodeVersion: '18.x',
+                                status: 'ACTIVE'
                             }
                         }
-                    }
-                }
-            },
-            include: {
-                projects: {
-                    include: {
-                        environments: true
-                    }
-                }
+                    },
+                    include: { projects: true }
+                });
+                logger.info("Created new user:", user.id);
+            } else {
+                // Update existing user
+                user = await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        lastLoginAt: new Date(),
+                        name: clerkUser.firstName || user.name,
+                        image: clerkUser.imageUrl || user.image
+                    },
+                    include: { projects: true }
+                });
+                logger.info("Updated existing user:", user.id);
             }
-        });
 
-        logger.info(`User authenticated: ${user.id}`);
-        logger.info(`Projects count: ${user.projects.length}`);
-        logger.info(`First project: ${user.projects[0]?.name}`);
-        
-        return {
-            success: true,
-            user
-        };
+            return { success: true, user };
+        } catch (dbError) {
+            logger.error("Database error:", dbError);
+            throw dbError; // Re-throw to be caught by outer catch
+        }
 
     } catch (error) {
         logger.error("Error in getAuthStatus:", error);
-        
-        // Check if it's a unique constraint violation
-        if (error instanceof Error && error.message.includes('Unique constraint')) {
-            return { 
-                success: false, 
-                error: "An account with this email already exists. Please sign in instead." 
-            };
-        }
-
         return { 
             success: false, 
-            error: "Failed to verify auth status" 
+            error: "Failed to verify auth status: " + (error as Error).message 
         };
     }
 };

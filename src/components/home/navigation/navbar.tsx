@@ -22,11 +22,8 @@ import AnimationContainer from "@/components/animate-cantanier";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
 import { NAV_LINKS } from "./constants";
 
-
 const Navbar = () => {
-
     const { user } = useClerk();
-
     const [scroll, setScroll] = useState(false);
 
     const handleScroll = () => {
@@ -47,20 +44,16 @@ const Navbar = () => {
     const handleUpgradeClick = () => {
         toast.success("Your payment is successful! 🎉 Enjoy our new Pro Plan✨", {
             style: {
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, #4a90e2, #9013fe)",
+                borderRadius: "16px",
+                background: "linear-gradient(135deg, #2563eb, #7c3aed)",
                 color: "#ffffff",
                 fontSize: "16px",
                 fontWeight: "500",
-                padding: "12px 20px",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
-                transition: "transform 0.2s ease-in-out",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                backdropFilter: "blur(10px)",
+                padding: "16px 24px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+                backdropFilter: "blur(12px)",
             },
-            icon: "🚀",
+            icon: "✨",
             duration: 4000,
         });
     };
@@ -68,13 +61,13 @@ const Navbar = () => {
     return (
         <>
             <header className={cn(
-                "sticky top-0 inset-x-0 h-14 w-full border-b border-transparent z-[99999] select-none",
-                scroll && "border-background/80 bg-background/40 backdrop-blur-md"
+                "sticky top-0 inset-x-0 h-16 w-full border-b border-transparent z-[99999] select-none transition-all duration-300",
+                scroll && "border-background/80 bg-background/60 backdrop-blur-xl"
             )}>
                 <AnimationContainer reverse delay={0.1} className="size-full">
-                    <MaxWidthWrapper className="flex justify-between items-center">
+                    <MaxWidthWrapper className="flex justify-between items-center h-full">
                         <div className="flex items-center space-x-12">
-                            <Link href="/">
+                            <Link href="/" className="transition-transform duration-300 hover:scale-105">
                                 <img src="/images/synex-ai-logo.png" alt="Synex AI Logo" className="w-40 h-40" />
                             </Link>
 
@@ -84,24 +77,24 @@ const Navbar = () => {
                                         <NavigationMenuItem key={link.title}>
                                             {link.menu ? (
                                                 <>
-                                                    <NavigationMenuTrigger>{link.title}</NavigationMenuTrigger>
+                                                    <NavigationMenuTrigger className="hover:text-primary transition-all duration-300">{link.title}</NavigationMenuTrigger>
                                                     <NavigationMenuContent>
                                                         <ul className={cn(
-                                                            "grid gap-1 p-4 md:w-[400px] lg:w-[500px] rounded-xl",
+                                                            "grid gap-2 p-6 md:w-[400px] lg:w-[500px] rounded-2xl bg-background/80 backdrop-blur-lg shadow-lg border border-background/20",
                                                             link.title === "Features" ? "lg:grid-cols-[.75fr_1fr]" : "lg:grid-cols-2"
                                                         )}>
                                                             {link.title === "Features" && (
-                                                                <li className="relative row-span-4 pr-2 rounded-lg overflow-hidden">
-                                                                    <div className="bg-[linear-gradient(to_right,rgb(38,38,38,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgb(38,38,38,0.5)_1px,transparent_1px)] !z-10 absolute inset-0 bg-[size:1rem_1rem] w-[calc(100%-10px)] h-full"></div>
+                                                                <li className="relative row-span-4 pr-2 rounded-xl overflow-hidden">
+                                                                    <div className="bg-[linear-gradient(to_right,rgb(38,38,38,0.3)_1px,transparent_1px),linear-gradient(to_bottom,rgb(38,38,38,0.3)_1px,transparent_1px)] !z-10 absolute inset-0 bg-[size:1rem_1rem] w-[calc(100%-10px)] h-full"></div>
                                                                     <NavigationMenuLink asChild className="relative z-20">
                                                                         <Link
                                                                             href="/"
-                                                                            className="flex flex-col justify-end bg-gradient-to-b from-muted/50 to-muted focus:shadow-md p-4 rounded-lg w-full h-full no-underline select-none outline-none"
+                                                                            className="flex flex-col justify-end bg-gradient-to-b from-muted/30 hover:from-primary/20 to-muted hover:to-primary/5 focus:shadow-lg p-6 rounded-xl w-full h-full no-underline transition-all duration-300 select-none outline-none"
                                                                         >
-                                                                            <h6 className="mt-4 mb-2 font-medium text-lg">
+                                                                            <h6 className="mt-4 mb-2 font-medium text-lg text-primary">
                                                                                 All Features
                                                                             </h6>
-                                                                            <p className="text-muted-foreground text-sm leading-tight">
+                                                                            <p className="text-muted-foreground text-sm leading-relaxed">
                                                                                 Manage links, track performance, and more.
                                                                             </p>
                                                                         </Link>
@@ -123,7 +116,10 @@ const Navbar = () => {
                                                 </>
                                             ) : (
                                                 <Link href={link.href} legacyBehavior passHref>
-                                                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                                                    <NavigationMenuLink className={cn(
+                                                        navigationMenuTriggerStyle(),
+                                                        "transition-all duration-300 hover:text-primary hover:bg-primary/10"
+                                                    )}>
                                                         {link.title}
                                                     </NavigationMenuLink>
                                                 </Link>
@@ -132,7 +128,6 @@ const Navbar = () => {
                                     ))}
                                 </NavigationMenuList>
                             </NavigationMenu>
-
                         </div>
 
                         <div className="lg:flex items-center hidden">
@@ -143,32 +138,39 @@ const Navbar = () => {
                                         variant="ghost"
                                         onClick={handleUpgradeClick}
                                         disabled={!user}
-                                        className="relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-violet-600 before:via-fuchsia-500 before:to-rose-500 before:opacity-0 hover:before:opacity-10 hover:shadow-[0_0_30px_rgba(168,85,247,0.6),0_0_60px_rgba(236,72,153,0.4),0_0_90px_rgba(59,130,246,0.3)] border border-transparent hover:border-transparent transition-all before:transition-opacity duration-300 overflow-hidden group"
+                                        className="relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-violet-600 before:via-blue-600 before:to-purple-600 before:opacity-0 hover:before:opacity-20 hover:shadow-[0_0_40px_rgba(124,58,237,0.5),0_0_80px_rgba(37,99,235,0.4)] rounded-xl transition-all before:transition-opacity duration-500 overflow-hidden group"
                                     >
-                                        <ZapIcon className="group-hover:text-amber-400 mr-1.5 text-orange-500 transition-colors fill-orange-500 size-4" />
-                                        <span className="group-hover:text-white relative z-10 transition-colors">Upgrade</span>
-                                        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/30 via-fuchsia-500/30 to-rose-500/30 opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-300" />
+                                        <ZapIcon className="group-hover:text-yellow-400 group-hover:scale-110 mr-2 text-violet-500 transition-all duration-300 fill-violet-500 size-4" />
+                                        <span className="group-hover:text-white relative z-10 transition-colors duration-300">Upgrade</span>
+                                        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-500" />
                                     </Button>
                                     <Link 
                                         href="/dashboard" 
                                         className={cn(
                                             buttonVariants({ size: "sm" }),
-                                            "relative group overflow-hidden hover:shadow-[0_0_30px_rgba(59,130,246,0.5),0_0_60px_rgba(236,72,153,0.3),0_0_90px_rgba(234,179,8,0.2)] transition-all duration-300",
-                                            "before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-600 before:via-purple-600 before:to-yellow-500 before:opacity-0 hover:before:opacity-10 before:transition-opacity"
+                                            "relative group overflow-hidden rounded-xl hover:shadow-[0_0_40px_rgba(37,99,235,0.5),0_0_80px_rgba(124,58,237,0.4)] transition-all duration-500",
+                                            "before:absolute before:inset-0 before:bg-gradient-to-r before:from-blue-600 before:via-violet-600 before:to-purple-600 before:opacity-0 hover:before:opacity-20 before:transition-opacity"
                                         )}
                                     >
-                                        <span className="group-hover:text-white relative z-10 transition-colors">Dashboard</span>
-                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-yellow-500/30 opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-300" />
+                                        <span className="group-hover:text-white relative z-10 transition-colors duration-300">Dashboard</span>
+                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-violet-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-500" />
                                     </Link>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-x-4">
-                                    <Link href="/auth/sign-in" className={buttonVariants({ size: "sm", variant: "ghost" })}>
+                                    <Link href="/auth/sign-in" className={cn(
+                                        buttonVariants({ size: "sm", variant: "ghost" }),
+                                        "hover:bg-primary/10 transition-all duration-300"
+                                    )}>
                                         Sign In
                                     </Link>
-                                    <Link href="/auth/sign-up" className={buttonVariants({ size: "sm", })}>
-                                        Get Started
-                                        <ZapIcon className="ml-1.5 text-orange-500 fill-orange-500 size-3.5" />
+                                    <Link href="/auth/sign-up" className={cn(
+                                        buttonVariants({ size: "sm" }),
+                                        "relative group overflow-hidden rounded-xl hover:shadow-[0_0_40px_rgba(37,99,235,0.5)] transition-all duration-500"
+                                    )}>
+                                        <span className="relative z-10">Get Started</span>
+                                        <ZapIcon className="group-hover:rotate-12 ml-2 text-amber-400 transition-transform duration-300 fill-amber-400 size-4" />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-violet-600/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-500" />
                                     </Link>
                                 </div>
                             )}
@@ -185,20 +187,16 @@ const Navbar = () => {
                 toastOptions={{
                     success: {
                         style: {
-                            borderRadius: "12px",
-                            background: "linear-gradient(135deg, #4a90e2, #9013fe)",
+                            borderRadius: "16px",
+                            background: "linear-gradient(135deg, #2563eb, #7c3aed)",
                             color: "#ffffff",
                             fontSize: "16px",
                             fontWeight: "500",
-                            padding: "12px 20px",
-                            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
-                            transition: "transform 0.2s ease-in-out",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            backdropFilter: "blur(10px)",
+                            padding: "16px 24px",
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+                            backdropFilter: "blur(12px)",
                         },
-                        icon: "🚀",
+                        icon: "✨",
                         duration: 4000,
                     },
                 }}
@@ -218,18 +216,18 @@ const ListItem = React.forwardRef<
                     href={href!}
                     ref={ref}
                     className={cn(
-                        "block select-none space-y-1 rounded-lg p-3 leading-none no-underline outline-none transition-all duration-100 ease-out hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                        "block select-none space-y-1.5 rounded-xl p-4 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/10 hover:scale-[1.02]",
                         className
                     )}
                     {...props}
                 >
-                    <div className="flex items-center space-x-2 text-neutral-300">
-                        <Icon className="w-4 h-4" />
+                    <div className="flex items-center space-x-3 text-primary">
+                        <Icon className="group-hover:scale-110 w-5 h-5 transition-transform duration-300" />
                         <h6 className="font-medium text-sm !leading-none">
                             {title}
                         </h6>
                     </div>
-                    <p title={children! as string} className="line-clamp-1 text-muted-foreground text-sm leading-snug">
+                    <p title={children! as string} className="line-clamp-1 text-muted-foreground text-sm leading-relaxed">
                         {children}
                     </p>
                 </Link>
