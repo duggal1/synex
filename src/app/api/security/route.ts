@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   const wafService = new WAFService();
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { projectId, securityConfig } = await req.json();
 
     // Setup WAF rules

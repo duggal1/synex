@@ -8,13 +8,13 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  clerkId       String?   @unique
+  id            String     @id @default(uuid())
+  clerkId       String?    @unique
   name          String?
-  email         String    @unique
+  email         String     @unique
   emailVerified DateTime?
   image         String?
-  apiKey        String    @unique @default(uuid())
+  apiKey        String     @unique @default(uuid())
   lastLoginAt   DateTime?
   status        UserStatus @default(ACTIVE)
 
@@ -80,6 +80,8 @@ model Project {
   cacheHeaders       Json?
   PerformanceMetrics PerformanceMetrics[]
   EdgeMetrics        EdgeMetrics[]
+
+  optimizationMetrics OptimizationMetrics[]
 
   @@index([userId])
   @@index([status])
@@ -260,6 +262,13 @@ model ProjectConfig {
   projectId String  @unique
   project   Project @relation(fields: [projectId], references: [id])
 
+  // Build optimization configuration
+  optimizationConfig Json? // Stores build optimization settings
+  buildSettings      Json? // Stores build-specific settings
+  buildCache         Boolean @default(true)
+  incrementalCache   Boolean @default(true)
+  persistentCache    Boolean @default(true)
+
   // Rendering configuration
   renderingConfig Json
   framework       Framework
@@ -272,14 +281,15 @@ model ProjectConfig {
   // File configurations
   configFiles ProjectFile[]
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  // Performance and infrastructure configs
   performanceConfig Json?
   cacheConfig       Json?
   cdnConfig         Json?
   autoScalingConfig Json?
+  edgeConfig        Json?
 
-  edgeConfig Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
 }
@@ -432,4 +442,22 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   DELETED
+}
+
+// Add this model for optimization metrics
+model OptimizationMetrics {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  type      String   // 'OPTIMIZATION' or 'OPTIMIZATION_ERROR'
+  duration  Int?
+  framework Framework?
+  error     String?
+  stack     String?
+  data      Json?
+  timestamp DateTime @default(now())
+
+  @@index([projectId])
+  @@index([type])
+  @@index([timestamp])
 }
