@@ -21,17 +21,20 @@ export interface Deployment {
   commitHash: string | null;
   branch: string;
   environmentId: string;
-  buildLogs: string[];
+  buildLogs: any;
   status: DeploymentStatus;
   framework: Framework;
-  healthCheckResults?: HealthCheckResults;
-  lastHealthCheck?: Date;
   containerId?: string;
+  containerPort?: number;
+  healthCheckResults: any | null;
+  lastHealthCheck: Date | null;
+  memory: number;
+  cpu: number;
   createdAt: Date;
   updatedAt: Date;
   url: string | null;
-  env?: Record<string, string>;
-  buildPath?: string;
+  env: Record<string, string>;
+  buildPath: string;
 }
 
 // Define Framework as an enum
@@ -39,9 +42,7 @@ export enum Framework {
   NEXTJS = 'NEXTJS',
   REMIX = 'REMIX',
   ASTRO = 'ASTRO',
-  STATIC = 'STATIC',
-  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
-  DEFAULT = 'NEXTJS' // Default value
+  STATIC = 'STATIC'
 }
 
 // You can also use it as a type
@@ -161,4 +162,114 @@ export interface HealthCheckResults {
   dockerHealth: boolean;
   metricsHealth: boolean;
   metrics?: HealthCheckMetrics;
+}
+
+// Cache-related types
+export interface BrowserCacheConfig {
+  static: string;
+  dynamic: string;
+}
+
+export interface EdgeCacheConfig {
+  ttl: number;
+  staleWhileRevalidate: number;
+}
+
+export interface ServerCacheConfig {
+  memory: boolean;
+  redis: boolean;
+}
+
+export interface CacheConfig {
+  browser: BrowserCacheConfig;
+  edge: EdgeCacheConfig;
+  server: ServerCacheConfig;
+}
+
+// Framework-specific cache configurations
+export type FrameworkCacheConfig = Record<Framework, CacheConfig>;
+
+export const DEFAULT_FRAMEWORK_CACHE_CONFIGS: FrameworkCacheConfig = {
+  [Framework.NEXTJS]: {
+    browser: {
+      static: '1y',
+      dynamic: '1h'
+    },
+    edge: {
+      ttl: 3600,
+      staleWhileRevalidate: 86400
+    },
+    server: {
+      memory: true,
+      redis: true
+    }
+  },
+  [Framework.REMIX]: {
+    browser: {
+      static: '1y',
+      dynamic: '5m'
+    },
+    edge: {
+      ttl: 300,
+      staleWhileRevalidate: 3600
+    },
+    server: {
+      memory: true,
+      redis: true
+    }
+  },
+  [Framework.ASTRO]: {
+    browser: {
+      static: '1y',
+      dynamic: '1d'
+    },
+    edge: {
+      ttl: 86400,
+      staleWhileRevalidate: 172800
+    },
+    server: {
+      memory: true,
+      redis: true
+    }
+  },
+  [Framework.STATIC]: {
+    browser: {
+      static: '1y',
+      dynamic: '1d'
+    },
+    edge: {
+      ttl: 86400,
+      staleWhileRevalidate: 172800
+    },
+    server: {
+      memory: true,
+      redis: false
+    }
+  }
+};
+
+// Cache-related interfaces
+export interface CacheItem {
+  data: any;
+  timestamp: number;
+  tags: string[];
+}
+
+export interface CacheOptions {
+  level: 'edge' | 'server' | 'browser';
+  tags?: string[];
+  ttl?: number;
+}
+
+// Update the CacheService to use these types
+export interface CacheRule {
+  pattern: string;
+  ttl: number;
+}
+
+export interface CacheHeaders {
+  [pattern: string]: {
+    'Cache-Control': string;
+    [key: string]: string;
+  };
 }

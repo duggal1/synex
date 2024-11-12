@@ -5,15 +5,32 @@ import { ContainerManager } from './ContainerManager';
 import { DomainService } from './DomainService';
 import { Framework, DeploymentStatus } from '@/types/index';
 import { logger } from '@/lib/logger';
+import Docker from 'dockerode';
+
+interface HealthCheckResult {
+  status: 'healthy' | 'unhealthy';
+  details?: string;
+}
+
+type FrameworkValidation = (files: Buffer) => Promise<void>;
+
+interface FrameworkValidations {
+  [Framework.NEXTJS]: FrameworkValidation;
+  [Framework.REMIX]: FrameworkValidation;
+  [Framework.ASTRO]: FrameworkValidation;
+  [Framework.STATIC]: FrameworkValidation;
+}
 
 export class DeploymentOrchestrator {
   private buildPipeline: BuildPipeline;
   private containerManager: ContainerManager;
   private domainService: DomainService;
+  private docker: Docker;
 
   constructor() {
-    this.buildPipeline = new BuildPipeline();
-    this.containerManager = new ContainerManager();
+    this.docker = new Docker();
+    this.buildPipeline = new BuildPipeline({});
+    this.containerManager = new ContainerManager(this.docker);
     this.domainService = new DomainService();
   }
 
@@ -74,11 +91,11 @@ export class DeploymentOrchestrator {
     const hasRemixConfig = await this.searchInFiles(files, 'remix.config');
     const hasAstroConfig = await this.searchInFiles(files, 'astro.config');
 
-    if (hasNextConfig) return 'NEXTJS';
-    if (hasRemixConfig) return 'REMIX';
-    if (hasAstroConfig) return 'ASTRO';
+    if (hasNextConfig) return Framework.NEXTJS;
+    if (hasRemixConfig) return Framework.REMIX; 
+    if (hasAstroConfig) return Framework.ASTRO;
     
-    throw new Error('Unsupported framework');
+    return Framework.STATIC; // Default to static if no framework detected
   }
 
   private async searchInFiles(files: Buffer, configName: string): Promise<boolean> {
@@ -86,25 +103,42 @@ export class DeploymentOrchestrator {
   }
 
   private async validateProject(files: Buffer, framework: Framework) {
-    const validations = {
-      NEXTJS: this.validateNextJS,
-      REMIX: this.validateRemix,
-      ASTRO: this.validateAstro
+    const validations: FrameworkValidations = {
+      [Framework.NEXTJS]: this.validateNextJS.bind(this),
+      [Framework.REMIX]: this.validateRemix.bind(this),
+      [Framework.ASTRO]: this.validateAstro.bind(this),
+      [Framework.STATIC]: this.validateStatic.bind(this)
     };
 
-    await validations[framework].call(this, files);
+    await validations[framework](files);
   }
 
   private async validateNextJS(files: Buffer) {
-    // Implement Next.js validation logic
+    const requiredFiles = ['package.json', 'next.config.js'];
+    await this.validateRequiredFiles(files, requiredFiles);
   }
 
   private async validateRemix(files: Buffer) {
-    // Implement Remix validation logic
+    const requiredFiles = ['package.json', 'remix.config.js'];
+    await this.validateRequiredFiles(files, requiredFiles);
   }
 
   private async validateAstro(files: Buffer) {
-    // Implement Astro validation logic
+    const requiredFiles = ['package.json', 'astro.config.mjs'];
+    await this.validateRequiredFiles(files, requiredFiles);
+  }
+
+  private async validateStatic(files: Buffer) {
+    const requiredFiles = ['index.html'];
+    await this.validateRequiredFiles(files, requiredFiles);
+  }
+
+  private async validateRequiredFiles(files: Buffer, requiredFiles: string[]) {
+    for (const file of requiredFiles) {
+      if (!await this.searchInFiles(files, file)) {
+        throw new Error(`Missing required file: ${file}`);
+      }
+    }
   }
 
   private async verifyDeployment(containerId: string, url: string) {
@@ -113,7 +147,7 @@ export class DeploymentOrchestrator {
 
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const health = await this.containerManager.checkHealth(containerId);
+        const health = await this.checkContainerHealth(containerId);
         const response = await fetch(url);
 
         if (health.status === 'healthy' && response.ok) {
@@ -129,6 +163,33 @@ export class DeploymentOrchestrator {
     throw new Error('Deployment verification failed');
   }
 
+  private async checkContainerHealth(containerId: string): Promise<HealthCheckResult> {
+    try {
+      const container = this.docker.getContainer(containerId);
+      const info = await container.inspect();
+
+      if (!info.State) {
+        return { status: 'unhealthy', details: 'Container state not available' };
+      }
+
+      if (info.State.Health) {
+        return {
+          status: info.State.Health.Status === 'healthy' ? 'healthy' : 'unhealthy',
+          details: info.State.Health.Log?.[0]?.Output
+        };
+      }
+
+      // If no health check is configured, check if container is running
+      return {
+        status: info.State.Running ? 'healthy' : 'unhealthy',
+        details: info.State.Status
+      };
+    } catch (error) {
+      logger.error('Container health check failed:', error);
+      return { status: 'unhealthy', details: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
   private async updateProduction(projectId: string, deploymentId: string) {
     await prisma.$transaction(async (tx) => {
       await tx.project.update({
@@ -140,12 +201,15 @@ export class DeploymentOrchestrator {
         where: { 
           projectId,
           NOT: { id: deploymentId },
-          status: 'ACTIVE' as DeploymentStatus
+          status: 'DEPLOYED' as DeploymentStatus
         }
       });
+
       for (const deployment of oldDeployments) {
-        if (deployment.containerId !== null) {
-          await this.containerManager.stopContainer(deployment.containerId);
+        if (deployment.containerId) {
+          const container = this.docker.getContainer(deployment.containerId);
+          await container.stop();
+          await container.remove();
         }
       }
     });
@@ -160,7 +224,21 @@ export class DeploymentOrchestrator {
       }
     });
 
-    await this.containerManager.cleanup(deploymentId);
+    try {
+      const deployment = await prisma.deployment.findUnique({
+        where: { id: deploymentId },
+        select: { containerId: true }
+      });
+
+      if (deployment?.containerId) {
+        const container = this.docker.getContainer(deployment.containerId);
+        await container.stop();
+        await container.remove();
+      }
+    } catch (cleanupError) {
+      logger.error('Cleanup after deployment failure failed:', cleanupError);
+    }
+
     logger.error('Deployment failed', { deploymentId, error });
   }
 } 
