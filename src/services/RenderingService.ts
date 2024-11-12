@@ -116,13 +116,13 @@ export class RenderingService {
 
       // Framework-specific optimizations
       switch (framework) {
-        case 'NEXTJS':
+        case Framework.NEXTJS:
           await this.optimizeNextJS(projectId);
           break;
-        case 'REMIX':
+        case Framework.REMIX:
           await this.optimizeRemix(projectId);
           break;
-        case 'ASTRO':
+        case Framework.ASTRO:
           await this.optimizeAstro(projectId);
           break;
         default:
@@ -175,7 +175,7 @@ export class RenderingService {
       }
     };
 
-    if (!this.validateConfig(config, 'NEXTJS')) {
+    if (!this.validateConfig(config, Framework.NEXTJS)) {
       throw new Error('Invalid Next.js configuration');
     }
 
@@ -211,7 +211,7 @@ export class RenderingService {
       }
     };
 
-    if (!this.validateConfig(config, 'REMIX')) {
+    if (!this.validateConfig(config, Framework.REMIX)) {
       throw new Error('Invalid Remix configuration');
     }
 
@@ -247,7 +247,7 @@ export class RenderingService {
       }
     };
 
-    if (!this.validateConfig(config, 'ASTRO')) {
+    if (!this.validateConfig(config, Framework.ASTRO)) {
       throw new Error('Invalid Astro configuration');
     }
 
@@ -270,13 +270,13 @@ export class RenderingService {
         where: { projectId },
         update: {
           renderingConfig: jsonConfig,
-          framework: 'NEXTJS',
+          framework: Framework.NEXTJS,
           strategy: this.determineRenderingStrategy(config)
         },
         create: {
           projectId,
           renderingConfig: jsonConfig,
-          framework: 'NEXTJS',
+          framework: Framework.NEXTJS,
           strategy: this.determineRenderingStrategy(config)
         }
       });
@@ -301,13 +301,13 @@ export class RenderingService {
         where: { projectId },
         update: {
           renderingConfig: jsonConfig,
-          framework: 'REMIX',
+          framework: Framework.REMIX,
           strategy: this.determineRenderingStrategy(config)
         },
         create: {
           projectId,
           renderingConfig: jsonConfig,
-          framework: 'REMIX',
+          framework: Framework.REMIX,
           strategy: this.determineRenderingStrategy(config)
         }
       });
@@ -332,13 +332,13 @@ export class RenderingService {
         where: { projectId },
         update: {
           renderingConfig: jsonConfig,
-          framework: 'ASTRO',
+          framework: Framework.ASTRO,
           strategy: this.determineRenderingStrategy(config)
         },
         create: {
           projectId,
           renderingConfig: jsonConfig,
-          framework: 'ASTRO',
+          framework: Framework.ASTRO,
           strategy: this.determineRenderingStrategy(config)
         }
       });
@@ -413,7 +413,7 @@ export class RenderingService {
 
   private async optimizeNextJSBuild(projectId: string): Promise<void> {
     try {
-      const buildConfig = await this.generateBuildConfig('NEXTJS');
+      const buildConfig = await this.generateBuildConfig(Framework.NEXTJS);
       await this.updateProjectConfig(projectId, 'next.config.js', buildConfig);
     } catch (error) {
       logger.error(`Failed to optimize Next.js build for project ${projectId}:`, error);
@@ -423,7 +423,7 @@ export class RenderingService {
 
   private async optimizeRemixBuild(projectId: string): Promise<void> {
     try {
-      const buildConfig = await this.generateBuildConfig('REMIX');
+      const buildConfig = await this.generateBuildConfig(Framework.REMIX);
       await this.updateProjectConfig(projectId, 'remix.config.js', buildConfig);
     } catch (error) {
       logger.error(`Failed to optimize Remix build for project ${projectId}:`, error);
@@ -433,7 +433,7 @@ export class RenderingService {
 
   private async optimizeAstroBuild(projectId: string): Promise<void> {
     try {
-      const buildConfig = await this.generateBuildConfig('ASTRO');
+      const buildConfig = await this.generateBuildConfig(Framework.ASTRO);
       await this.updateProjectConfig(projectId, 'astro.config.mjs', buildConfig);
     } catch (error) {
       logger.error(`Failed to optimize Astro build for project ${projectId}:`, error);
@@ -443,7 +443,7 @@ export class RenderingService {
 
   private async generateBuildConfig(framework: Framework) {
     switch (framework) {
-      case 'NEXTJS':
+      case Framework.NEXTJS:
         return {
           swcMinify: true,
           compiler: {
@@ -480,7 +480,7 @@ export class RenderingService {
           },
         };
 
-      case 'REMIX':
+      case Framework.REMIX:
         return {
           serverBuildTarget: "vercel",
           server: "cloudflare",
@@ -490,7 +490,7 @@ export class RenderingService {
           serverPlatform: "node",
           serverMinify: true,
         };
-      case 'ASTRO':
+      case Framework.ASTRO:
         return {
           output: 'hybrid',
           adapter: '@astrojs/node',
@@ -501,17 +501,19 @@ export class RenderingService {
             excludeMiddleware: false,
           },
         };
+      default:
+        throw new Error(`Unsupported framework: ${framework}`);
     }
   }
 
   private validateConfig(config: NextJSConfig | RemixConfig | AstroConfig, framework: Framework): boolean {
     try {
       switch (framework) {
-        case 'NEXTJS':
+        case Framework.NEXTJS:
           return 'renderingStrategies' in config && 'optimization' in config;
-        case 'REMIX':
+        case Framework.REMIX:
           return 'serverBundling' in config && 'clientBundling' in config;
-        case 'ASTRO':
+        case Framework.ASTRO:
           return 'prerender' in config && 'imageOptimization' in config;
         default:
           return false;

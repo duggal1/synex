@@ -14,11 +14,24 @@ export interface Project {
 export interface Deployment {
   id: string;
   projectId: string;
+  userId: string;
+  buildCommand: string;
+  nodeVersion: string;
   version: string;
+  commitHash: string | null;
+  branch: string;
+  environmentId: string;
   buildLogs: string[];
   status: DeploymentStatus;
+  framework: Framework;
+  healthCheckResults?: HealthCheckResults;
+  lastHealthCheck?: Date;
+  containerId?: string;
   createdAt: Date;
-  environmentId: string;
+  updatedAt: Date;
+  url: string | null;
+  env?: Record<string, string>;
+  buildPath?: string;
 }
 
 // Define Framework as an enum
@@ -124,4 +137,28 @@ export interface DomainConfig {
   type: 'CUSTOM' | 'SUBDOMAIN';
   ssl: boolean;
   proxied: boolean;
-} 
+}
+
+// Define the health check related types
+export interface HealthCheckResult {
+  success: boolean;
+  responseTime: number;
+  statusCode: number;
+  error?: string;
+}
+
+export interface HealthCheckMetrics {
+  cpu: number;
+  memory: number;
+  networkIn?: number;
+  networkOut?: number;
+}
+
+export interface HealthCheckResults {
+  success: boolean;
+  timestamp: Date;
+  results: HealthCheckResult[];
+  dockerHealth: boolean;
+  metricsHealth: boolean;
+  metrics?: HealthCheckMetrics;
+}

@@ -125,6 +125,7 @@ model Deployment {
   branch        String      @default("main")
   environment   Environment @relation(fields: [environmentId], references: [id])
   environmentId String
+  framework     Framework   @default(NEXTJS)
 
   // Build information
   buildLogs Json
@@ -134,6 +135,10 @@ model Deployment {
   // Container info
   containerId   String?
   containerPort Int?
+
+  // Health check information
+  healthCheckResults Json?
+  lastHealthCheck    DateTime?
 
   // Metrics
   memory Int   @default(0) // in MB
@@ -145,12 +150,12 @@ model Deployment {
   metrics   Metrics[]
   analytics Analytics[]
 
-  url String?
-
+  url  String?
   logs DeploymentLog[]
 
   @@index([projectId])
   @@index([status])
+  @@index([framework])
 }
 
 model Environment {
