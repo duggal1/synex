@@ -1,5 +1,6 @@
 import { authMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export default authMiddleware({
     publicRoutes: [
@@ -34,6 +35,28 @@ export default authMiddleware({
             }
             // Redirect to dashboard for all other auth routes when user is signed in
             return NextResponse.redirect(new URL('/dashboard', req.url));
+        }
+
+        try {
+            const user = await prisma.user.findUnique({
+                where: { clerkId: auth.userId }
+            });
+
+            if (!user && auth.userId) {
+                // Force create user if not exists
+                await prisma.user.create({
+                    data: {
+                        clerkId: auth.userId,
+                        email: auth.sessionClaims?.email as string,
+                        name: auth.sessionClaims?.firstName as string,
+                        lastLoginAt: new Date(),
+                        subscriptionStatus: 'FREE',
+                        usageLimit: 10
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Middleware DB sync failed:", error);
         }
 
         return NextResponse.next();

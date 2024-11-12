@@ -6,14 +6,13 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model User {
   id            String     @id @default(uuid())
-  clerkId       String?    @unique
-  name          String?
+  clerkId       String     @unique
+  name          String     @default("") // Made required with default empty string
   email         String     @unique
   emailVerified DateTime?
-  image         String?
+  image         String     @default("") // Made required with default empty string
   apiKey        String     @unique @default(uuid())
   lastLoginAt   DateTime?
   status        UserStatus @default(ACTIVE)
@@ -351,7 +350,6 @@ enum DomainType {
   CUSTOM
 }
 
-//storage for project builds
 model ProjectStorage {
   id        String   @id @default(cuid())
   projectId String
@@ -414,7 +412,6 @@ enum RenderingStrategy {
   HYBRID
 }
 
-// Add this model for performance metrics
 model PerformanceMetrics {
   id        String   @id @default(cuid())
   projectId String
@@ -426,7 +423,6 @@ model PerformanceMetrics {
   @@index([timestamp])
 }
 
-// Add EdgeMetrics model
 model EdgeMetrics {
   id           String   @id @default(cuid())
   projectId    String
@@ -450,7 +446,6 @@ enum UserStatus {
   DELETED
 }
 
-// Add this model for optimization metrics
 model OptimizationMetrics {
   id        String     @id @default(cuid())
   projectId String

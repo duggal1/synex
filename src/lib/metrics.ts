@@ -11,6 +11,7 @@ export interface DockerContainerStats {
 }
 
 export class MetricsCollector {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [x: string]: any;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getContainerStats(deploymentId: string): DockerContainerStats | PromiseLike<DockerContainerStats> {
