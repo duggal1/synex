@@ -10,6 +10,7 @@ import { createHash } from 'crypto';
 import { Project, Framework } from '@prisma/client';
 import path from 'path';
 import fs from 'fs-extra';
+import Dockerode from 'dockerode';
 
 interface AssetOptimizationConfig {
   images: {
@@ -58,7 +59,7 @@ export class PerformanceService {
 
   constructor() {
     this.cache = new CacheService();
-    this.loadBalancer = new LoadBalancerService();
+    this.loadBalancer = new LoadBalancerService(new Dockerode());
     this.redis = new Redis(process.env.REDIS_URL!);
     this.assetCache = new Map();
   }
