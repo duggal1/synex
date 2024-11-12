@@ -1,6 +1,7 @@
 import Docker from 'dockerode';
 import { Framework } from '@/types/index';
 import { logger } from '@/lib/logger';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import path from 'path';
 
 interface DeployOptions {
@@ -11,170 +12,86 @@ interface DeployOptions {
 }
 
 export class ContainerManager {
-  private docker: Docker;
-  private readonly networkName = 'deployment-network';
+  private readonly docker: Docker;
 
-  constructor() {
-    this.docker = new Docker();
-    this.ensureNetwork();
+  constructor(docker: Docker) {
+    this.docker = docker;
   }
 
-  async deploy(options: DeployOptions) {
-    const { deploymentId, buildPath, framework, env } = options;
-
+  async deploy(options: DeployOptions): Promise<Docker.Container> {
     try {
-      const image = await this.buildImage(deploymentId, buildPath, framework);
-      const network = await this.setupNetworking(deploymentId);
-      const container = await this.createContainer({
-        deploymentId,
-        image,
-        env,
-        network
+      logger.info(`Deploying container for deployment ${options.deploymentId}`);
+
+      const container = await this.docker.createContainer({
+        Image: this.getDockerImage(options.framework),
+        Env: this.formatEnvVariables(options.env),
+        Labels: {
+          deploymentId: options.deploymentId,
+          framework: options.framework
+        },
+        HostConfig: {
+          RestartPolicy: {
+            Name: 'unless-stopped'
+          },
+          Binds: [
+            `${options.buildPath}:/app`
+          ]
+        }
       });
 
       await container.start();
-
-      return {
-        id: container.id,
-        network: network.id,
-        image: image.id
-      };
-
+      return container;
     } catch (error) {
-      await this.cleanup(deploymentId);
+      logger.error('Container deployment failed:', error);
       throw error;
     }
   }
 
-  private async buildImage(deploymentId: string, buildPath: string, framework: Framework) {
-    const dockerfile = this.getDockerfile(framework);
-    
-    return new Promise<Docker.Image>((resolve, reject) => {
-      this.docker.buildImage({
-        context: buildPath,
-        src: ['Dockerfile', '.next', 'node_modules', 'package.json']
-      }, {
-        t: `deployment-${deploymentId}`,
-        dockerfile
-      }, (error, stream) => {
-        if (error) {
-          return reject(error);
-        }
-        if (!stream) {
-          return reject(new Error('Docker build stream is undefined'));
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        this.docker.modem.followProgress(stream, (err, res) => {
-          if (err) {
-            return reject(err);
-          }
-          resolve(this.docker.getImage(`deployment-${deploymentId}`));
-        });
-      });
-    });
-  }
-
-  private async setupNetworking(deploymentId: string) {
-    return this.docker.createNetwork({
-      Name: `network-${deploymentId}`,
-      Driver: 'bridge',
-      Internal: false,
-      EnableIPv6: true,
-      Options: {
-        'com.docker.network.bridge.enable_icc': 'true',
-        'com.docker.network.bridge.enable_ip_masquerade': 'true'
-      }
-    });
-  }
-
-  private async createContainer(options: {
-    deploymentId: string;
-    image: Docker.Image;
-    env: Record<string, string>;
-    network: Docker.Network;
-  }) {
-    return this.docker.createContainer({
-      Image: options.image.id,
-      name: `deployment-${options.deploymentId}`,
-      Env: Object.entries(options.env).map(([k, v]) => `${k}=${v}`),
-      HostConfig: {
-        NetworkMode: options.network.id,
-        Memory: 1024 * 1024 * 1024, // 1GB
-        NanoCpus: 1000000000, // 1 CPU
-        RestartPolicy: {
-          Name: 'always'
-        }
-      },
-      NetworkingConfig: {
-        EndpointsConfig: {
-          [options.network.id]: {
-            Aliases: [`deployment-${options.deploymentId}`]
-          }
-        }
-      },
-      Healthcheck: {
-        Test: ['CMD', 'curl', '-f', 'http://localhost:3000/health'],
-        Interval: 30000000000, // 30s
-        Timeout: 10000000000, // 10s
-        Retries: 3
-      }
-    });
-  }
-
-  async checkHealth(containerId: string) {
+  async waitForReady(containerId: string, timeout = 30000): Promise<void> {
+    const startTime = Date.now();
     const container = this.docker.getContainer(containerId);
-    const info = await container.inspect();
-    return {
-      status: info.State.Health?.Status || 'unknown',
-      running: info.State.Running
-    };
-  }
 
-  async cleanup(deploymentId: string) {
-    try {
-      const container = this.docker.getContainer(`deployment-${deploymentId}`);
-      await container.stop();
-      await container.remove();
-
-      const network = this.docker.getNetwork(`network-${deploymentId}`);
-      await network.remove();
-
-      const image = this.docker.getImage(`deployment-${deploymentId}`);
-      await image.remove();
-
-    } catch (error) {
-      logger.error('Cleanup failed', { deploymentId, error });
+    while (Date.now() - startTime < timeout) {
+      try {
+        const info = await container.inspect();
+        if (info.State.Running && !info.State.Restarting) {
+          // Additional health check
+          const stats = await container.stats({ stream: false });
+          if (stats.cpu_stats.cpu_usage.total_usage > 0) {
+            return;
+          }
+        }
+      } catch (error) {
+        logger.error(`Container health check failed: ${error}`);
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    throw new Error(`Container ${containerId} not ready after ${timeout}ms`);
   }
 
-  async stopContainer(containerId: string) {
+  async cleanup(containerId: string): Promise<void> {
     try {
       const container = this.docker.getContainer(containerId);
       await container.stop();
       await container.remove();
+      logger.info(`Successfully cleaned up container ${containerId}`);
     } catch (error) {
-      logger.error('Failed to stop container', { containerId, error });
+      logger.error(`Container cleanup failed: ${error}`);
+      throw error;
     }
   }
 
-  private async ensureNetwork() {
-    try {
-      await this.docker.getNetwork(this.networkName);
-    } catch {
-      await this.docker.createNetwork({
-        Name: this.networkName,
-        Driver: 'bridge'
-      });
-    }
-  }
-
-  private getDockerfile(framework: Framework): string {
-    const dockerfiles = {
-      NEXTJS: path.join(__dirname, '../dockerfiles/nextjs.dockerfile'),
-      REMIX: path.join(__dirname, '../dockerfiles/remix.dockerfile'),
-      ASTRO: path.join(__dirname, '../dockerfiles/astro.dockerfile')
+  private getDockerImage(framework: Framework): string {
+    const images = {
+      [Framework.NEXTJS]: 'node:18-alpine',
+      [Framework.REMIX]: 'node:18-alpine',
+      [Framework.ASTRO]: 'node:18-alpine',
+      [Framework.STATIC]: 'nginx:alpine'
     };
+    return images[framework];
+  }
 
-    return dockerfiles[framework];
+  private formatEnvVariables(env: Record<string, string>): string[] {
+    return Object.entries(env).map(([key, value]) => `${key}=${value}`);
   }
 }

@@ -2,31 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Redis } from 'ioredis';
 import { prisma } from '@/lib/prisma';
-import { Framework } from '@/types/index';
+import { Framework, CacheConfig, FrameworkCacheConfig, DEFAULT_FRAMEWORK_CACHE_CONFIGS, CacheItem, CacheRule, CacheHeaders } from '@/types/index';
 import { logger } from '@/lib/logger';
 import { createHash } from 'crypto';
 import { CloudflareClient } from '@/lib/cloudflare';
-
-interface CacheConfig {
-  browser: {
-    static: string;
-    dynamic: string;
-  };
-  edge: {
-    ttl: number;
-    staleWhileRevalidate: number;
-  };
-  server: {
-    memory: boolean;
-    redis: boolean;
-  };
-}
-
-interface CacheItem {
-  data: any;
-  timestamp: number;
-  tags: string[];
-}
 
 export class CacheService {
   [x: string]: any;
@@ -78,56 +57,11 @@ export class CacheService {
   }
 
   private getFrameworkCacheConfig(framework: Framework): CacheConfig {
-    const configs = {
-      NEXTJS: {
-        browser: {
-          static: '1y',
-          dynamic: '1h'
-        },
-        edge: {
-          ttl: 3600,
-          staleWhileRevalidate: 86400
-        },
-        server: {
-          memory: true,
-          redis: true
-        }
-      },
-      REMIX: {
-        browser: {
-          static: '1y',
-          dynamic: '5m'
-        },
-        edge: {
-          ttl: 300,
-          staleWhileRevalidate: 3600
-        },
-        server: {
-          memory: true,
-          redis: true
-        }
-      },
-      ASTRO: {
-        browser: {
-          static: '1y',
-          dynamic: '1d'
-        },
-        edge: {
-          ttl: 86400,
-          staleWhileRevalidate: 172800
-        },
-        server: {
-          memory: true,
-          redis: true
-        }
-      }
-    };
-
-    return configs[framework];
+    return DEFAULT_FRAMEWORK_CACHE_CONFIGS[framework];
   }
 
   private async setupEdgeCaching(projectId: string) {
-    const rules = [
+    const rules: CacheRule[] = [
       {
         pattern: '/_next/static/*',
         ttl: 31536000 // 1 year
@@ -146,7 +80,7 @@ export class CacheService {
   }
 
   private async setupBrowserCaching(projectId: string) {
-    const headers = {
+    const headers: CacheHeaders = {
       '/_next/static/*': {
         'Cache-Control': 'public, max-age=31536000, immutable'
       },

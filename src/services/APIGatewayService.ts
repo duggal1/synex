@@ -84,7 +84,8 @@ export class APIGatewayService {
     const routeConfigs: Record<Framework, Promise<RouteConfig[]>> = {
       NEXTJS: this.getNextJSRoutes(projectId),
       REMIX: this.getRemixRoutes(projectId),
-      ASTRO: this.getAstroRoutes(projectId)
+      ASTRO: this.getAstroRoutes(projectId),
+      [Framework.STATIC]: Promise.resolve([])
     };
 
     return routeConfigs[framework];

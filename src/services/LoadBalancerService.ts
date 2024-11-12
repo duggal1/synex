@@ -7,6 +7,7 @@ import { MetricsCollector } from './MetricsCollector';
 import { EventEmitter } from 'events';
 import { Project, Domain, Deployment } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
+import Docker from 'dockerode';
 
 interface LoadBalancerStats {
   activeConnections: number;
@@ -33,15 +34,14 @@ interface LoadBalancerConfig {
 }
 
 export class LoadBalancerService extends EventEmitter {
-  setupGlobalRouting(arg0: { projectId: any; container: any; algorithm: any; healthCheck: { path: string; interval: number; timeout: number; unhealthyThreshold: number; }; ssl: { enabled: boolean; provider: string; }; }) {
-      throw new Error('Method not implemented.');
-  }
-  private redis: Redis;
+  private readonly docker: Docker;
+  private readonly redis: Redis;
   private metricsCollector: MetricsCollector;
   private healthCheckIntervals: Map<string, NodeJS.Timer>;
 
-  constructor() {
+  constructor(docker: Docker) {
     super();
+    this.docker = docker;
     this.redis = new Redis(process.env.REDIS_URL!);
     this.metricsCollector = new MetricsCollector();
     this.healthCheckIntervals = new Map();
@@ -273,5 +273,68 @@ export class LoadBalancerService extends EventEmitter {
       clearInterval(interval as NodeJS.Timeout);
       this.healthCheckIntervals.delete(projectId);
     }
+  }
+
+  async switchTraffic(
+    fromContainerId: string,
+    toContainerId: string,
+    projectId: string
+  ): Promise<void> {
+    try {
+      logger.info(`Switching traffic from ${fromContainerId} to ${toContainerId}`);
+
+      // Update routing rules in Redis
+      await this.redis.hset(`routing:${projectId}`, {
+        activeContainerId: toContainerId,
+        previousContainerId: fromContainerId,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update Nginx configuration
+      await this.updateNginxConfig(projectId, toContainerId);
+
+      // Update container labels
+      await this.updateContainerLabels(fromContainerId, toContainerId, projectId);
+
+      logger.info(`Successfully switched traffic for project ${projectId}`);
+    } catch (error) {
+      logger.error('Traffic switch failed:', error);
+      throw error;
+    }
+  }
+
+  private async updateNginxConfig(
+    projectId: string,
+    activeContainerId: string
+  ): Promise<void> {
+    // Implementation for updating Nginx configuration
+    // This would typically involve:
+    // 1. Generating new Nginx configuration
+    // 2. Validating the configuration
+    // 3. Reloading Nginx
+  }
+
+  private async updateContainerLabels(
+    fromContainerId: string,
+    toContainerId: string,
+    projectId: string
+  ): Promise<void> {
+    const fromContainer = this.docker.getContainer(fromContainerId);
+    const toContainer = this.docker.getContainer(toContainerId);
+
+    await Promise.all([
+      fromContainer.update({
+        Labels: {
+          status: 'inactive',
+          projectId
+        }
+      }),
+      toContainer.update({
+        Labels: {
+          status: 'active',
+          projectId
+        }
+      })
+    ]);
   }
 }

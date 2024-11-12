@@ -1,108 +1,160 @@
 import { prisma } from '@/lib/prisma';
-import Docker from 'dockerode';
+import { logger } from '@/lib/logger';
 import { Redis } from 'ioredis';
-import { logger } from './logger';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { ContainerStats } from 'dockerode';
 
-interface ContainerStats {
+export interface DockerContainerStats {
   cpu: number;
   memory: number;
-  networkIn?: number;
-  networkOut?: number;
   timestamp: Date;
 }
 
 export class MetricsCollector {
-  private redis: Redis;
-  private docker: Docker;
+  [x: string]: any;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getContainerStats(deploymentId: string): DockerContainerStats | PromiseLike<DockerContainerStats> {
+    throw new Error('Method not implemented.');
+  }
+  private readonly redis: Redis;
+  private readonly metricsPrefix = 'metrics:';
 
   constructor() {
     this.redis = new Redis(process.env.REDIS_URL!);
-    this.docker = new Docker();
   }
 
-  async getContainerStats(deploymentId: string): Promise<ContainerStats> {
+  async getErrorRate(deploymentId: string): Promise<number> {
     try {
-      const container = this.docker.getContainer(deploymentId);
-      const stats = await container.stats({ stream: false });
-      
-      const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
-      const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
-      
-      const cpuPercent = (cpuDelta / systemDelta) * 100;
-      const memoryUsage = stats.memory_stats.usage;
-      const memoryLimit = stats.memory_stats.limit;
-      const memoryPercent = (memoryUsage / memoryLimit) * 100;
-
-      return {
-        cpu: cpuPercent,
-        memory: memoryPercent,
-        networkIn: 0,
-        networkOut: 0,
-        timestamp: new Date()
-      };
-    } catch (error) {
-      logger.error('Failed to get container stats:', {
-        deploymentId,
-        error
+      // Get error metrics from the last 5 minutes
+      const errors = await prisma.metrics.findMany({
+        where: {
+          deploymentId,
+          timestamp: {
+            gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
+          }
+        },
+        select: {
+          errorRate: true
+        }
       });
-      throw error;
+
+      if (errors.length === 0) return 0;
+
+      // Calculate average error rate
+      const totalErrorRate = errors.reduce((sum, metric) => sum + metric.errorRate, 0);
+      return totalErrorRate / errors.length;
+    } catch (error) {
+      logger.error(`Failed to get error rate for deployment ${deploymentId}:`, error);
+      return 0;
     }
   }
 
-  async calculateAverageCPU(metrics: Array<{ cpu: number }>) {
-    if (!metrics.length) return 0;
-    const sum = metrics.reduce((acc, curr) => acc + curr.cpu, 0);
-    return sum / metrics.length;
+  async getLatencyP95(deploymentId: string): Promise<number> {
+    try {
+      // Get latency metrics from Redis (more real-time)
+      const latencies = await this.redis.lrange(
+        `${this.metricsPrefix}${deploymentId}:latency`,
+        0,
+        -1
+      );
+
+      if (latencies.length === 0) return 0;
+
+      // Calculate P95 latency
+      const sortedLatencies = latencies
+        .map(l => parseInt(l))
+        .sort((a, b) => a - b);
+      
+      const p95Index = Math.floor(sortedLatencies.length * 0.95);
+      return sortedLatencies[p95Index];
+    } catch (error) {
+      logger.error(`Failed to get P95 latency for deployment ${deploymentId}:`, error);
+      return 0;
+    }
   }
 
-  async calculateAverageMemory(metrics: Array<{ memory: number }>) {
-    if (!metrics.length) return 0;
-    const sum = metrics.reduce((acc, curr) => acc + curr.memory, 0);
-    return sum / metrics.length;
-  }
+  async getCpuUsage(deploymentId: string): Promise<number> {
+    try {
+      // Get CPU metrics from the last minute
+      const cpuMetrics = await prisma.metrics.findMany({
+        where: {
+          deploymentId,
+          timestamp: {
+            gte: new Date(Date.now() - 60 * 1000) // Last minute
+          }
+        },
+        select: {
+          cpu: true
+        },
+        orderBy: {
+          timestamp: 'desc'
+        },
+        take: 1
+      });
 
-  async getRequestRate(projectId: string): Promise<number> {
-    const key = `metrics:requests:${projectId}`;
-    const requests = await this.redis.get(key);
-    return parseInt(requests || '0', 10);
-  }
-
-  async getAverageResponseTime(projectId: string): Promise<number> {
-    const key = `metrics:responsetime:${projectId}`;
-    const times = await this.redis.lrange(key, 0, -1);
-    if (!times.length) return 0;
-    
-    const sum = times.reduce((acc, curr) => acc + parseFloat(curr), 0);
-    return sum / times.length;
+      return cpuMetrics[0]?.cpu ?? 0;
+    } catch (error) {
+      logger.error(`Failed to get CPU usage for deployment ${deploymentId}:`, error);
+      return 0;
+    }
   }
 
   async recordMetrics(deploymentId: string, metrics: {
-    cpu: number;
-    memory: number;
-    requests: number;
-    responseTime: number;
-  }) {
-    await prisma.metrics.create({
-      data: {
-        deploymentId,
-        ...metrics,
-        timestamp: new Date()
+    errorRate?: number;
+    latency?: number;
+    cpu?: number;
+    memory?: number;
+    requests?: number;
+  }): Promise<void> {
+    try {
+      // Store in database
+      await prisma.metrics.create({
+        data: {
+          deploymentId,
+          cpu: metrics.cpu ?? 0,
+          memory: metrics.memory ?? 0,
+          requests: metrics.requests ?? 0,
+          errorRate: metrics.errorRate ?? 0,
+          responseTime: metrics.latency ?? 0,
+          throughput: 0,
+          timestamp: new Date()
+        }
+      });
+
+      // Store latency in Redis for P95 calculations
+      if (metrics.latency) {
+        await this.redis.lpush(
+          `${this.metricsPrefix}${deploymentId}:latency`,
+          metrics.latency.toString()
+        );
+        // Keep only last 1000 latency measurements
+        await this.redis.ltrim(
+          `${this.metricsPrefix}${deploymentId}:latency`,
+          0,
+          999
+        );
       }
-    });
+    } catch (error) {
+      logger.error(`Failed to record metrics for deployment ${deploymentId}:`, error);
+    }
   }
 
-  async getMetricsHistory(deploymentId: string, timeRange: { from: Date; to: Date }) {
-    return await prisma.metrics.findMany({
-      where: {
-        deploymentId,
-        timestamp: {
-          gte: timeRange.from,
-          lte: timeRange.to
+  async cleanup(deploymentId: string): Promise<void> {
+    try {
+      // Clean up Redis metrics
+      await this.redis.del(`${this.metricsPrefix}${deploymentId}:latency`);
+      
+      // Optionally clean up old database metrics
+      await prisma.metrics.deleteMany({
+        where: {
+          deploymentId,
+          timestamp: {
+            lt: new Date(Date.now() - 24 * 60 * 60 * 1000) // Older than 24 hours
+          }
         }
-      },
-      orderBy: {
-        timestamp: 'asc'
-      }
-    });
+      });
+    } catch (error) {
+      logger.error(`Failed to cleanup metrics for deployment ${deploymentId}:`, error);
+    }
   }
 }

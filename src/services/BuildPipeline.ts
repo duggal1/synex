@@ -645,10 +645,10 @@ export class BuildPipeline {
 
   private async validateProjectStructure(buildPath: string, framework: Framework): Promise<void> {
     const requiredFiles: Record<Framework, string[]> = {
-        NEXTJS: ['package.json', 'next.config.js', 'tsconfig.json'],
-        REMIX: ['package.json', 'remix.config.js', 'tsconfig.json'],
-        ASTRO: ['package.json', 'astro.config.mjs', 'tsconfig.json'],
-       // STATIC: ['package.json']
+      NEXTJS: ['package.json', 'next.config.js', 'tsconfig.json'],
+      REMIX: ['package.json', 'remix.config.js', 'tsconfig.json'],
+      ASTRO: ['package.json', 'astro.config.mjs', 'tsconfig.json'],
+      [Framework.STATIC]: []
     };
 
     const missingFiles = requiredFiles[framework].filter(

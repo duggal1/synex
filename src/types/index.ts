@@ -72,13 +72,14 @@ export interface ProjectConfig {
   nodeVersion: string;   
 }
 
-export type DeploymentStatus = 
-  | 'QUEUED'
-  | 'BUILDING'
-  | 'DEPLOYING'
-  | 'DEPLOYED'
-  | 'FAILED'
-  | 'CANCELLED';
+export enum DeploymentStatus {
+  QUEUED = 'QUEUED',
+  BUILDING = 'BUILDING',
+  DEPLOYING = 'DEPLOYING',
+  DEPLOYED = 'DEPLOYED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED'
+}
 
 // Base interface for build results
 export interface BaseBuildResult {
