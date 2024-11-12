@@ -79,9 +79,8 @@ export class ZeroDowntimeDeployer {
       await this.executeTrafficShiftStage(stages[1], currentDeployment.id);
       await this.executeHealthCheckStage(stages[2], currentDeployment.id);
       await this.executeRollbackReadyStage(stages[3], currentDeployment.id);
-
       // Update deployment status
-      await this.updateDeploymentStatus(currentDeployment.id, 'DEPLOYED');
+      await this.updateDeploymentStatus(currentDeployment.id, DeploymentStatus.DEPLOYED);
       
       logger.info(`Zero-downtime deployment completed for project ${projectId}`);
     } catch (error) {
@@ -340,9 +339,8 @@ export class ZeroDowntimeDeployer {
       await container.remove({ force: true });
     }
   }
-
   private async handleDeploymentFailure(deploymentId: string): Promise<void> {
-    await this.updateDeploymentStatus(deploymentId, 'FAILED');
+    await this.updateDeploymentStatus(deploymentId, DeploymentStatus.FAILED);
     await this.rollback(deploymentId);
   }
 

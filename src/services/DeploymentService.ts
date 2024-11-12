@@ -66,7 +66,7 @@ export class DeploymentService {
     config: ProjectConfig
   ) {
     try {
-      await this.updateDeploymentStatus(deploymentId, 'BUILDING');
+      await this.updateDeploymentStatus(deploymentId, DeploymentStatus.BUILDING);
 
       const buildPath = await this.storageService.prepareBuildDirectory(deploymentId, files);
 
@@ -138,9 +138,9 @@ export class DeploymentService {
     } catch (error) {
       logger.error('Deployment processing failed', { deploymentId, error });
       if (error instanceof Error) {
-        await this.updateDeploymentStatus(deploymentId, 'FAILED', error.message);
+        await this.updateDeploymentStatus(deploymentId, DeploymentStatus.FAILED, error.message);
       } else {
-        await this.updateDeploymentStatus(deploymentId, 'FAILED', 'Unknown error');
+        await this.updateDeploymentStatus(deploymentId, DeploymentStatus.FAILED, 'Unknown error');
       }
       throw error;
     }
