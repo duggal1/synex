@@ -3,7 +3,7 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { logger } from "@/lib/logger";
-
+//checks if user exits in session
 export const checkUserExists = async () => {
     try {
         // Initialize Supabase client
@@ -14,7 +14,7 @@ export const checkUserExists = async () => {
 
         if (sessionError) {
             logger.error("Session error:", sessionError);
-            return { exists: false, error: "Authentication error" };
+            return { exists: false, error: "Authentication error❌" };
         }
 
         if (!session?.user) {
