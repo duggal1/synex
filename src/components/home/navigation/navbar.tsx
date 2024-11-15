@@ -42,7 +42,7 @@ const Navbar = () => {
     }, []);
 
     const handleUpgradeClick = () => {
-        toast.success("Your payment is successful! 🎉 Enjoy our new Pro Plan✨", {
+        toast.success("Your payment is successful!  Enjoy our new Pro Plan✨", {
             style: {
                 borderRadius: "16px",
                 background: "linear-gradient(135deg, #0f172a, #1e3a8a)",
