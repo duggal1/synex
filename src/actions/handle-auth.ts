@@ -37,6 +37,7 @@ export const handleAuth = async () => {
                 // Create user
                 const createdUser = await tx.user.create({
                     data: {
+                        clerkId:supabaseUser.email!,
                         email: supabaseUser.email!,
                         name: supabaseUser.user_metadata.full_name || supabaseUser.email!.split('@')[0],
                         image: supabaseUser.user_metadata.avatar_url,
