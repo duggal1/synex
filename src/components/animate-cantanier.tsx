@@ -16,7 +16,7 @@ const AnimationContainer = ({ children, className, reverse, delay = 0.2 }: Anima
             initial={{
                 opacity: 0,
                 y: reverse ? -5 : 5, // Minimal vertical movement for ultra-smoothness
-                scale: 0.98, // Subtle scale effect for a gentle intro
+                scale: 0.9, // Subtle scale effect for a gentle intro
                 rotate: reverse ? -1 : 1, // Slight rotation to give a smooth and dynamic feel
             }}
             whileInView={{
