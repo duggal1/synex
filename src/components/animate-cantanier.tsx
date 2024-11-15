@@ -25,11 +25,12 @@ const AnimationContainer = ({ children, className, reverse, delay = 0.2 }: Anima
                 transition: {
                     duration: 1.5, // Slower transition for ultra-smoothness
                     delay: delay,
-                    ease: [0.25, 0.75, 0.5, 1], // Custom ease for a super-smooth animation curve
+                    ease: [0.2, 0.6, 0.5, 1], // Custom ease for a super-smooth animation curve
                     type: 'spring',
                     stiffness: 120, // Low stiffness for softer, fluid movements
                     damping: 40 // Reduced damping for smoother stopping
                 }
+                
             }}
             viewport={{ once: false }} // Keeps the animation active when in view
         >
