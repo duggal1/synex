@@ -79,18 +79,19 @@ const DashboardSidebar = () => {
                                         <li key={index}>
                                             <Container delay={0.1}>
                                                 <Link
-                                                    href={link.href}
-                                                    className={buttonVariants({
-                                                        variant: "ghost",
-                                                        className: cn(
-                                                            "w-full !justify-start relative group transition-all duration-300",
-                                                            isActive ? "bg-muted text-primary" : "text-foreground/70",
-                                                            "hover:bg-gradient-to-r hover:from-primary/20 hover:to-primary/40",
-                                                            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary/60 after:to-primary/80",
-                                                            "hover:after:w-full after:transition-all after:duration-300"
-                                                        ),
-                                                    })}
-                                                >
+                                                href={link.href}
+                                                className={buttonVariants({
+                                                    variant: "ghost",
+                                                    className: cn(
+                                                        "w-full !justify-start relative group transition-all duration-300",
+                                                        isActive ? "bg-muted text-primary" : "text-foreground/70",
+                                                        "hover:bg-gradient-to-r hover:from-primary/30 hover:to-primary/60",
+                                                        "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary/80 after:to-primary/100",
+                                                        "hover:after:w-full after:transition-all after:duration-300",
+                                                        "transform transition-transform duration-300 group-hover:scale-105 group-hover:shadow-lg"
+                                                    ),
+                                                })}
+                                            >
                                                     <link.icon strokeWidth={2} className="group-hover:scale-110 mr-1.5 transition-transform duration-300 size-[18px]" />
                                                     <span className="flex-1">{link.label}</span>
                                                     {link.badge && (
@@ -126,7 +127,33 @@ const DashboardSidebar = () => {
 
             <style jsx global>{`
                 .custom-scrollbar {
-                    scrollbar-width: thin;
+                    scrollbar-width: thin;<Link
+    href={link.href}
+    className={buttonVariants({
+        variant: "ghost",
+        className: cn(
+            "w-full !justify-start relative group transition-all duration-300",
+            isActive ? "bg-muted text-primary" : "text-foreground/70",
+            "hover:bg-gradient-to-r hover:from-primary/30 hover:to-primary/60",
+            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary/80 after:to-primary/100",
+            "hover:after:w-full after:transition-all after:duration-300",
+            "transform transition-transform duration-300 group-hover:scale-105 group-hover:shadow-lg"
+        ),
+    })}
+><Link
+    href={link.href}
+    className={buttonVariants({
+        variant: "ghost",
+        className: cn(
+            "w-full !justify-start relative group transition-all duration-300",
+            isActive ? "bg-muted text-primary" : "text-foreground/70",
+            "hover:bg-gradient-to-r hover:from-primary/30 hover:to-primary/60",
+            "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-primary/80 after:to-primary/100",
+            "hover:after:w-full after:transition-all after:duration-300",
+            "transform transition-transform duration-300 group-hover:scale-105 group-hover:shadow-lg"
+        ),
+    })}
+>
                     scrollbar-color: rgba(var(--primary) / 0.3) transparent;
                 }
                 .custom-scrollbar::-webkit-scrollbar {
