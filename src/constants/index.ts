@@ -98,7 +98,7 @@ export const bentoCards = [
         alt: 'AI website building assistant'
     },
     {
-        title: 'Drag & Drop Customization',
+        title: 'Drag & Drop Customization⚡️',
         info: 'Effortlessly personalize your website with our intuitive drag-and-drop editor.',
         imgSrc: '/assets/bento1.svg', // Drag and Drop icon or hand editing a website
         alt: 'Website customization with drag and drop'
@@ -140,6 +140,99 @@ export const reviews = [
     {
         name: "James",
         username: "@james",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },
+    {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
+        body: "I'm at a loss for words. This is amazing. I love it.",
+    },  {
+        name: "Jane",
+        username: "@jane",
         body: "I'm at a loss for words. This is amazing. I love it.",
     },
 ];
