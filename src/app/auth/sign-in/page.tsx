@@ -23,13 +23,13 @@ const SignInPage = () => {
             <SignInForm />
 
             <div className="flex flex-col items-start w-full">
-                <p className="text-gray-300 text-sm">
+                <p className="text-gray-200 text-sm">
                     By signing in, you agree to our{" "}
-                    <Link href="/terms" className="text-blue-300/80 hover:text-blue-800 hover:underline">
+                    <Link href="/terms" className="text-blue-700/80 hover:text-blue-800 hover:underline">
                         Terms of Service{" "}
                     </Link>
                     and{" "}
-                    <Link href="/privacy" className="text-blue-400/80 hover:text-blue-800 hover:underline">
+                    <Link href="/privacy" className="text-blue-700/80 hover:text-blue-800 hover:underline">
                         Privacy Policy
                     </Link>
                 </p>
