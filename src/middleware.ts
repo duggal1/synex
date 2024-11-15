@@ -1,7 +1,8 @@
 import { authMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
+//todo --1 . user is not creating on our database 
+//todo --2. solution? -- 
 export default authMiddleware({
     publicRoutes: [
         "/",
