@@ -27,6 +27,7 @@ export const checkUserExists = async () => {
             .from('users')
             .select(`
                 id,
+                userid,
                 email,
                 name,
                 projects (
