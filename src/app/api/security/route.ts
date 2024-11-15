@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SecurityService } from '@/services/SecurityService';
+import { SecurityService } from '@/services/security/SecurityManager';
 import { RBACService } from '@/services/RBACService';
 import { WAFService } from '@/services/WAFService';
 

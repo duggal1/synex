@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Docker, { Container, ContainerCreateOptions } from 'dockerode';
@@ -12,21 +13,70 @@ interface ContainerConfig {
   cpus: number;
   restartPolicy: 'no' | 'always' | 'on-failure' | 'unless-stopped';
   healthcheck: {
-    interval: number;
-    timeout: number;
+    interval: number;  // in milliseconds
+    timeout: number;   // in milliseconds
     retries: number;
   };
 }
 
+interface DockerContainerConfig {
+  Memory?: number;
+  NanoCpus?: number;
+  NetworkMode?: string;
+  Env?: string[];
+  HealthCheck?: {
+    Test: string[];
+    Interval: number;
+    Timeout: number;
+    Retries: number;
+  };
+  Ports?: {
+    [key: string]: { HostPort: string; }[];
+  };
+  Volumes?: {
+    [key: string]: {};
+  };
+}
+
+interface CreateContainerOptions {
+  image: string;
+  name: string;
+  config: DockerContainerConfig;
+}
+
 export class DockerService {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  createContainer(arg0: { image: string; name: string; config: { Memory: number; NanoCpus: number; NetworkMode: string; Ports: { '80/tcp': { HostPort: string; }[]; '443/tcp': { HostPort: string; }[]; }; Volumes: { '/usr/local/etc/haproxy': {}; }; HealthCheck: { Test: string[]; Interval: number; Timeout: number; Retries: number; }; }; }) {
-      throw new Error('Method not implemented.');
-  }
   private docker: Docker;
 
   constructor() {
     this.docker = new Docker();
+  }
+
+  async createContainer(options: CreateContainerOptions): Promise<Docker.Container> {
+    try {
+      const container = await this.docker.createContainer({
+        Image: options.image,
+        name: options.name,
+        ...options.config,
+        HostConfig: {
+          Memory: options.config.Memory,
+          NanoCpus: options.config.NanoCpus,
+          NetworkMode: options.config.NetworkMode,
+          RestartPolicy: {
+            Name: 'always'
+          }
+        }
+      });
+
+      logger.info('Container created successfully', {
+        name: options.name,
+        image: options.image
+      });
+
+      return container;
+    } catch (error) {
+      logger.error('Failed to create container:', error);
+      throw new Error(`Failed to create container: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   getContainer(containerId: string): Docker.Container {
@@ -259,5 +309,112 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
 
 EXPOSE 3000
 CMD ["npm", "start"]`;
+  }
+
+  async startContainer(containerNameOrId: string): Promise<string> {
+    try {
+      // Get container instance
+      const container = this.docker.getContainer(containerNameOrId);
+      
+      // Start the container
+      await container.start();
+
+      // Wait for container to be running
+      const info = await container.inspect();
+      if (info.State?.Status !== 'running') {
+        throw new Error(`Container failed to start. Status: ${info.State?.Status}`);
+      }
+
+      // Wait for health check
+      const isHealthy = await this.waitForHealthCheck(container);
+      if (!isHealthy) {
+        logger.error('Container health check failed', { containerNameOrId });
+        await this.stopAndRemoveContainer(container);
+        throw new Error('Container failed health check');
+      }
+
+      // Setup container networking
+      await this.setupContainerNetworking(container);
+
+      // Monitor container logs
+      this.monitorContainerLogs(container);
+
+      logger.info('Container started successfully', {
+        containerId: info.Id,
+        name: info.Name,
+        status: info.State?.Status
+      });
+
+      return info.Id;
+    } catch (error) {
+      logger.error('Failed to start container:', {
+        containerNameOrId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error(`Failed to start container: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private async setupContainerNetworking(container: Container): Promise<void> {
+    try {
+      const info = await container.inspect();
+      const networkMode = info.HostConfig?.NetworkMode;
+
+      // If container is not in the security network, connect it
+      if (networkMode !== 'security-network') {
+        const network = await this.docker.getNetwork('security-network');
+        await network.connect({
+          Container: container.id,
+          EndpointConfig: {
+            IPAMConfig: {
+              IPv4Address: ''  // Auto-assign IP
+            }
+          }
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to setup container networking:', error);
+      throw error;
+    }
+  }
+
+  private monitorContainerLogs(container: Container): void {
+    const logOptions = {
+      follow: true,
+      stdout: true,
+      stderr: true,
+      timestamps: true
+    };
+
+    container.logs({...logOptions, follow: true} as const)
+      .then((stream) => {
+        if (stream instanceof Buffer) {
+          logger.debug('Container log:', {
+            containerId: container.id,
+            log: stream.toString('utf8').trim()
+          });
+          return;
+        }
+        stream.on('data', (chunk: Buffer) => {
+          const log = chunk.toString('utf8').trim();
+          logger.debug('Container log:', {
+            containerId: container.id,
+            log
+          });
+        });
+
+        stream.on('error', (error) => {
+          logger.error('Container log stream error:', {
+            containerId: container.id,
+            error: error.message
+          });
+        });
+      })
+      .catch((error) => {
+        logger.error('Failed to attach container logs:', {
+          containerId: container.id,
+          error: error.message
+        });
+      });
   }
 } 
