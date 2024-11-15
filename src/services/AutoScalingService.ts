@@ -16,10 +16,26 @@ interface ScalingRule {
 }
 
 interface ContainerMetrics {
-  cpu: number;
-  memory: number;
-  requests: number;
-  responseTime: number;
+  cpu: number; // CPU usage as a percentage
+  threshold: number; // A threshold value for comparison or triggering actions
+  memory: number; // Memory usage in bytes or percentage
+  requests: number; // Number of requests handled by the container
+  responseTime: number; // Average response time in milliseconds
+  diskUsage: number; // Disk usage in bytes or percentage
+  networkIn: number; // Incoming network traffic in bytes per second
+  networkOut: number; // Outgoing network traffic in bytes per second
+  uptime: number; // Container uptime in seconds
+  containerId: string; // Unique identifier for the container
+  replicas: number; // Number of replicas for the container
+  errorRate: number; // Rate of errors or failures per unit of time
+  throughput: number; // Number of requests processed per second
+  latency: number; // Latency of requests in milliseconds
+  restartCount: number; // Number of restarts for the container
+  diskReadOps: number; // Number of disk read operations per second
+  diskWriteOps: number; // Number of disk write operations per second
+  loadAverage: number; // Average system load over a period (e.g., 1 minute)
+  iowait: number; // Time the CPU is waiting for I/O operations to complete
+  threadCount: number; // Number of threads being used by the container
 }
 
 export class AutoScalingService extends EventEmitter {
@@ -134,14 +150,29 @@ export class AutoScalingService extends EventEmitter {
     );
 
     return {
-      cpu: await this.metricsCollector.calculateAverageCPU(containerMetrics),
-      memory: await this.metricsCollector.calculateAverageMemory(containerMetrics),
-      requests: await this.metricsCollector.getRequestRate(projectId),
-      responseTime: await this.metricsCollector.getAverageResponseTime(projectId)
-    };
-  }
-
-  private async evaluateScaling(projectId: string, metrics: ContainerMetrics) {
+    
+        cpu: await this.metricsCollector.calculateAverageCPU(containerMetrics),
+        memory: await this.metricsCollector.calculateAverageMemory(containerMetrics),
+        requests: await this.metricsCollector.getRequestRate(projectId),
+        responseTime: await this.metricsCollector.getAverageResponseTime(projectId),
+        threshold: await this.metricsCollector.calculateAverageCPU(containerMetrics), // Assuming threshold is calculated similarly to CPU
+        diskUsage: await this.metricsCollector.calculateDiskUsage(containerMetrics),
+        networkIn: await this.metricsCollector.calculateNetworkIn(containerMetrics),
+        networkOut: await this.metricsCollector.calculateNetworkOut(containerMetrics),
+        uptime: await this.metricsCollector.calculateUptime(containerMetrics),
+        containerId: await this.metricsCollector.getContainerId(containerMetrics),
+        replicas: await this.metricsCollector.getReplicas(projectId),
+        errorRate: await this.metricsCollector.getErrorRate(projectId),
+        throughput: await this.metricsCollector.getThroughput(projectId),
+        latency: await this.metricsCollector.getLatency(projectId),
+        restartCount: await this.metricsCollector.getRestartCount(containerMetrics),
+        diskReadOps: await this.metricsCollector.getDiskReadOps(containerMetrics),
+        diskWriteOps: await this.metricsCollector.getDiskWriteOps(containerMetrics),
+        loadAverage: await this.metricsCollector.getLoadAverage(containerMetrics),
+        iowait: await this.metricsCollector.getIOWait(containerMetrics),
+        threadCount: await this.metricsCollector.getThreadCount(containerMetrics)
+      };
+    }  private async evaluateScaling(projectId: string, metrics: ContainerMetrics) {
     const rules = this.scalingRules.get(projectId);
     if (!rules) return;
 
