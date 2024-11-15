@@ -206,7 +206,7 @@ const SignUpForm = () => {
                         variant="outline"
                         disabled={!isLoaded || oauthLoading === "oauth_google"}
                         onClick={() => handleOAuthSignUp("oauth_google")}
-                        className="w-full bg-gradient-to-r from-[#4285F4] to-[#34A853] hover:from-[#357AE8] hover:to-[#28A745] text-white transition-all duration-200"
+                        className="w-full bg-gradient-to-r from-[#4285F4] via-[#db0ea8] to-[#6e13c8] hover:from-[#357AE8] hover:to-[#27a8ff] text-white transition-all duration-200"
                     >
                         {oauthLoading === "oauth_google" ? (
                             <LoaderIcon className="w-5 h-5 animate-spin" />
