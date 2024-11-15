@@ -62,7 +62,7 @@ const Navbar = () => {
         <>
             <header className={cn(
                 "sticky top-0 inset-x-0 h-16 w-full border-b border-transparent z-[99999] select-none transition-all duration-500",
-                scroll && "border-slate-900 bg-gradient-to-r from-blue-800 via-purple-700 to-black/40 backdrop-blur-xl"
+                scroll && "border-slate-900 bg-gradient-to-r from-black/30 via-blue-800 to-purple-600 backdrop-blur-xl"
             )}>
                 <AnimationContainer reverse delay={0.1} className="size-full">
                     <MaxWidthWrapper className="flex justify-between items-center h-full">
