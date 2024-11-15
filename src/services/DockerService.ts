@@ -417,4 +417,37 @@ CMD ["npm", "start"]`;
         });
       });
   }
+
+  async updateContainerResources(containerId: string, resources: {
+    NanoCPUs?: number;
+    CpuQuota?: number;
+    CpuPeriod?: number;
+    Memory?: number;
+    MemorySwap?: number;
+    MemoryReservation?: number;
+  }): Promise<void> {
+    try {
+      const container = this.docker.getContainer(containerId);
+      
+      // Get current container info
+      const info = await container.inspect();
+      
+      // Prepare update configuration
+      const updateConfig = {
+        ...info.HostConfig,
+        ...resources
+      };
+
+      // Update container resources
+      await container.update(updateConfig);
+      
+      logger.info('Container resources updated successfully', {
+        containerId,
+        resources
+      });
+    } catch (error) {
+      logger.error('Failed to update container resources:', error);
+      throw new Error(`Failed to update container resources: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 } 
