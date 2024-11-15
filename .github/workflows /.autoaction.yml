@@ -1,0 +1,33 @@
+name: Auto Merge
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches:
+    - main
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Auto Merge PR
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const pullRequestNumber = context.payload.pull_request.number;
+          const pr = context.payload.pull_request;
+
+          // Ensure PR is not already merged
+          if (pr.mergeable_state === 'clean') {
+            await github.pulls.merge({
+              owner,
+              repo,
+              pull_number: pullRequestNumber
+            });
+          } else {
+            console.log(`Pull request #${pullRequestNumber} is not mergeable.`);
+          }
