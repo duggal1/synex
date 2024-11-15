@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DockerService } from '@/services/DockerService';
-import { SecurityService } from '@/services/SecurityService';
+import { SecurityService } from '@/services/security/SecurityManager'
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   const dockerService = new DockerService();
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const { projectId, securityConfig } = await req.json();
 
-    // Create ModSecurity container
+    // Create ModSecurity container with proper typing
     const wafContainer = await dockerService.createContainer({
       image: 'modsecurity:latest',
       name: `waf-${projectId}`,
@@ -27,14 +28,24 @@ export async function POST(req: NextRequest) {
           Interval: 30000000000,
           Timeout: 10000000000,
           Retries: 3
+        },
+        Ports: {
+          '80/tcp': [{ HostPort: '0' }],
+          '443/tcp': [{ HostPort: '0' }]
+        },
+        Volumes: {
+          '/usr/local/etc/modsecurity': {}
         }
       }
     });
 
-    // Setup security rules and policies
+    // Now wafContainer is properly typed as Docker.Container
+    const containerId = await dockerService.startContainer(wafContainer.id);
+
+    // Setup security policies
     await securityService.setupSecurityPolicies({
       projectId,
-      wafId: wafContainer.id,
+      wafId: containerId,
       rules: [
         'sql-injection',
         'xss',
@@ -55,11 +66,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      wafId: wafContainer.id,
+      wafId: containerId,
       status: 'active',
       policies: securityConfig
     });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('WAF setup failed:', err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-} 
+}

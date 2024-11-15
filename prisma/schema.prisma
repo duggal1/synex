@@ -6,6 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
   id            String     @id @default(uuid())
   clerkId       String     @unique
@@ -34,6 +35,8 @@ model User {
   @@index([subscriptionStatus])
   @@index([email])
   @@index([clerkId])
+
+  roles UserRole[]
 }
 
 model Project {
@@ -81,6 +84,9 @@ model Project {
   EdgeMetrics        EdgeMetrics[]
 
   optimizationMetrics OptimizationMetrics[]
+  SecurityConfig      SecurityConfig?
+
+  roles ProjectRole[]
 
   @@index([userId])
   @@index([status])
@@ -461,4 +467,58 @@ model OptimizationMetrics {
   @@index([projectId])
   @@index([type])
   @@index([timestamp])
+}
+
+model SecurityConfig {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Add wafId field
+  wafId String?
+
+  // Existing fields
+  rules          Json? // Array of WAF rules
+  rateLimit      Json? // Rate limiting configuration
+  ddosProtection Json? // DDoS protection settings
+  enabled        Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+enum Role {
+  USER
+  ADMIN
+  DEVELOPER
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      ProjectRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model ProjectRole {
+  id          String     @id @default(cuid())
+  name        String
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  permissions String[]   // Using native Prisma array support
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  UserRole    UserRole[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
 }
