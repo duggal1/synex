@@ -9,6 +9,7 @@ import { redis } from '@/lib/redis';
 import { Readable } from 'stream';
 
 interface ContainerConfig {
+  name(name: any): unknown;
   memory: number;
   cpus: number;
   restartPolicy: 'no' | 'always' | 'on-failure' | 'unless-stopped';
@@ -92,6 +93,9 @@ export class DockerService {
       interval: 30000,
       timeout: 10000,
       retries: 3
+    },
+    name: function (name: any): unknown {
+      throw new Error('Function not implemented.');
     }
   };
 
@@ -448,6 +452,26 @@ CMD ["npm", "start"]`;
     } catch (error) {
       logger.error('Failed to update container resources:', error);
       throw new Error(`Failed to update container resources: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+ 
+
+  private async verifyContainerHealth(containerId: string): Promise<void> {
+    const container = await this.docker.getContainer(containerId);
+    const info = await container.inspect();
+    
+    if (info.State?.Health?.Status !== 'healthy') {
+      throw new Error('Container health check failed');
+    }
+  }
+
+  private async cleanup(containerName: string): Promise<void> {
+    try {
+      const container = await this.docker.getContainer(containerName);
+      await container.remove({ force: true });
+    } catch (error) {
+      logger.error('Container cleanup failed:', error);
     }
   }
 } 

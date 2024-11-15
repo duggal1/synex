@@ -793,4 +793,87 @@ export class ResourceOptimizationService {
     const sizeFactor = Math.min(1, sampleSize / 100);
     return volatilityFactor * sizeFactor;
   }
+
+  private detectSeasonality(metrics: ResourceMetrics[]): {
+    cpu: { period: number; strength: number };
+    memory: { period: number; strength: number }; 
+    storage: { period: number; strength: number };
+    network: { period: number; strength: number };
+  } {
+    return {
+      cpu: this.detectResourceSeasonality(metrics.map(m => m.cpu.usage)),
+      memory: this.detectResourceSeasonality(metrics.map(m => m.memory.used)),
+      storage: this.detectResourceSeasonality(metrics.map(m => m.storage.used)), 
+      network: this.detectResourceSeasonality(metrics.map(m => m.network.latency))
+    };
+  }
+
+  private detectResourceSeasonality(values: number[]): { period: number; strength: number } {
+    // Minimum data points needed for seasonality detection
+    if (values.length < 24) {
+      return { period: 0, strength: 0 };
+    }
+
+    // Calculate autocorrelation for different lags
+    const maxLag = Math.floor(values.length / 2);
+    const correlations: number[] = [];
+    
+    for (let lag = 1; lag <= maxLag; lag++) {
+      let correlation = 0;
+      let n = 0;
+      
+      for (let i = 0; i < values.length - lag; i++) {
+        correlation += (values[i] - this.calculateAverage(values)) * 
+                      (values[i + lag] - this.calculateAverage(values));
+        n++;
+      }
+      
+      correlation /= n * this.calculateVariance(values);
+      correlations.push(correlation);
+    }
+
+    // Find the strongest periodic pattern
+    let maxCorrelation = 0;
+    let period = 0;
+    
+    correlations.forEach((correlation, lag) => {
+      if (correlation > maxCorrelation && correlation > 0.5) {
+        maxCorrelation = correlation;
+        period = lag + 1;
+      }
+    });
+
+    return {
+      period,
+      strength: maxCorrelation
+    };
+  }
+
+  private calculateVariance(values: number[]): number {
+    const mean = this.calculateAverage(values);
+    const squaredDiffs = values.map(value => Math.pow(value - mean, 2));
+    return this.calculateAverage(squaredDiffs);
+  }
+
+  async validateProject(projectId: string): Promise<boolean> {
+    try {
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { id: true, status: true }
+      });
+      
+      return project?.status === 'ACTIVE';
+    } catch (error) {
+      logger.error('Project validation failed:', error);
+      return false;
+    }
+  }
+
+  async cleanup(): Promise<void> {
+    try {
+      await this.redis.quit();
+    } catch (error) {
+      logger.error('Cleanup failed:', error);
+    }
+  }
 }
