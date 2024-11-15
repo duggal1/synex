@@ -101,7 +101,7 @@ const SignInForm = () => {
                         variant="outline"
                         disabled={!isLoaded || oauthLoading === "oauth_google"}
                         onClick={() => handleOAuthSignIn("oauth_google")}
-                        className="w-full"
+                        className="w-full bg-gradient-to-r from-[#4285F4] via-[#db0ea8] to-[#6e13c8] hover:from-[#ff51ee] hover:via-[#aa00ff]  hover:to-[#2c44ff] text-white transition-all duration-200"
                     >
                         {oauthLoading === "oauth_google" ? (
                             <LoaderIcon className="w-5 h-5 animate-spin" />
@@ -116,7 +116,7 @@ const SignInForm = () => {
                         variant="outline"
                         disabled={!isLoaded || oauthLoading === "oauth_github"}
                         onClick={() => handleOAuthSignIn("oauth_github")}
-                        className="w-full"
+                          className="w-full bg-gradient-to-r from-[#0e142a] via-[#2a0120] to-[#1a0331] hover:from-[#22256a] hover:via-[#4f014a]  hover:to-[#0f1754] text-white transition-all duration-200"
                     >
                         {oauthLoading === "oauth_github" ? (
                             <LoaderIcon className="w-5 h-5 animate-spin" />
