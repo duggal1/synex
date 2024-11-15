@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { execAsync } from '@/lib/exec';
 import { Prisma } from '@prisma/client';
-
+//updated code 
 interface ComponentBoundary {
   id: string;
   priority: 'critical' | 'high' | 'medium' | 'low';

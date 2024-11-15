@@ -117,7 +117,7 @@ const SignUpForm = () => {
 
     const handleOAuthSignUp = async (strategy: OAuthStrategy) => {
         if (!isLoaded) return;
-
+        
         try {
             setOAuthLoading(strategy);
             await signUp?.authenticateWithRedirect({
@@ -169,7 +169,7 @@ const SignUpForm = () => {
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transition-all duration-200"
+                        className="w-full"
                     >
                         {isLoading ? (
                             <LoaderIcon className="w-5 h-5 animate-spin" />
@@ -206,7 +206,7 @@ const SignUpForm = () => {
                         variant="outline"
                         disabled={!isLoaded || oauthLoading === "oauth_google"}
                         onClick={() => handleOAuthSignUp("oauth_google")}
-                        className="w-full bg-gradient-to-r from-[#4285F4] via-[#db0ea8] to-[#6e13c8] hover:from-[#494cff] hover:via-[#ff79fd]  hover:to-[#7522be] text-white transition-all duration-200"
+                        className="w-full"
                     >
                         {oauthLoading === "oauth_google" ? (
                             <LoaderIcon className="w-5 h-5 animate-spin" />
@@ -221,7 +221,7 @@ const SignUpForm = () => {
                         variant="outline"
                         disabled={!isLoaded || oauthLoading === "oauth_github"}
                         onClick={() => handleOAuthSignUp("oauth_github")}
-                        className="w-full bg-gradient-to-r from-[#4285F4] via-[#092bb5] to-[#460a83] hover:from-[#4e92ff] hover:to-[#9f31ff] text-white transition-all duration-200"
+                        className="w-full"
                     >
                         {oauthLoading === "oauth_github" ? (
                             <LoaderIcon className="w-5 h-5 animate-spin" />
@@ -239,76 +239,84 @@ const SignUpForm = () => {
                 <div className="absolute inset-0 flex items-center">
                     <span className="border-t w-full" />
                 </div>
-                <div className="relative flex justify-center text-muted-foreground">
-                    <span className="bg-background px-2">Or continue with</span>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                        Or continue with email
+                    </span>
                 </div>
             </div>
 
             <form onSubmit={handleSignUp} className="w-full">
-                <div className="space-y-2 pl-0.5 w-full">
+                <div className="space-y-2 w-full">
                     <Label htmlFor="name">
-                        Full name
+                        Name
                     </Label>
                     <Input
                         id="name"
-                        name="name"
+                        type="name"
                         value={name}
                         disabled={!isLoaded || isUpdating}
                         onChange={(e) => setName(e.target.value)}
+                        placeholder="Enter your name"
+                        className="focus-visible:border-foreground w-full"
                     />
                 </div>
-
-                <div className="space-y-2 pl-0.5 w-full mt-4">
+                <div className="space-y-2 mt-4 w-full">
                     <Label htmlFor="email">
-                        Email address
+                        Email
                     </Label>
                     <Input
                         id="email"
-                        name="email"
+                        type="email"
                         value={email}
                         disabled={!isLoaded || isUpdating}
                         onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        className="focus-visible:border-foreground w-full"
                     />
                 </div>
-
-                <div className="space-y-2 pl-0.5 w-full mt-4">
+                <div className="space-y-2 mt-4">
                     <Label htmlFor="password">
                         Password
                     </Label>
-                    <div className="relative">
+                    <div className="relative w-full">
                         <Input
                             id="password"
-                            name="password"
                             type={showPassword ? "text" : "password"}
                             value={password}
                             disabled={!isLoaded || isUpdating}
                             onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            className="focus-visible:border-foreground w-full"
                         />
-                        <div
-                            className="absolute top-1/2 right-2 transform -translate-y-1/2 cursor-pointer"
+                        <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="top-1 right-1 absolute"
                             onClick={() => setShowPassword(!showPassword)}
                         >
-                            {showPassword ? <EyeOff /> : <Eye />}
-                        </div>
+                            {showPassword ?
+                                <EyeOff className="w-4 h-4" /> :
+                                <Eye className="w-4 h-4" />
+                            }
+                        </Button>
                     </div>
                 </div>
-
                 <div className="mt-4 w-full">
                     <Button
                         type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transition-all duration-200"
+                        disabled={!isLoaded || isUpdating}
+                        className="w-full"
                     >
                         {isUpdating ? (
                             <LoaderIcon className="w-5 h-5 animate-spin" />
-                        ) : (
-                            "Create account"
-                        )}
+                        ) : "Continue"}
                     </Button>
                 </div>
             </form>
         </div>
-    );
+    )
 };
 
-export default SignUpForm;
+export default SignUpForm

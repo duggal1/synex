@@ -22,6 +22,17 @@ interface SSLConfig {
   status: 'active' | 'pending' | 'error';
 }
 
+interface RateLimitConfig {
+  threshold: number;
+  period: string;
+  action: 'challenge' | 'block' | 'simulate';
+}
+
+interface DDoSRule {
+  threshold: number;
+  mitigation: ('challenge' | 'block')[];
+}
+
 export class CloudflareService {
   private readonly apiToken: string;
   private readonly zoneId: string;
@@ -293,6 +304,170 @@ export class CloudflareService {
     } catch (error) {
       logger.error('Cloudflare API request failed:', error as Error);
       throw error;
+    }
+  }
+
+  async setupRateLimiting(config: { zoneId: string; config: RateLimitConfig }): Promise<void> {
+    try {
+      const response = await this.makeRequest(`/zones/${config.zoneId}/rate_limits`, {
+        method: 'POST',
+        body: JSON.stringify({
+          disabled: false,
+          description: `Rate limiting rule - ${config.config.threshold} requests per ${config.config.period}`,
+          match: {
+            request: {
+              methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'],
+              schemes: ['HTTP', 'HTTPS'],
+              url: '*'
+            }
+          },
+          threshold: config.config.threshold,
+          period: config.config.period,
+          action: {
+            mode: config.config.action,
+            timeout: 60,
+            response: {
+              content_type: 'text/plain',
+              body: 'Rate limit exceeded'
+            }
+          }
+        })
+      });
+
+      logger.info('Rate limiting configured successfully', {
+        zoneId: config.zoneId,
+        threshold: config.config.threshold,
+        period: config.config.period
+      });
+
+      return response.result;
+    } catch (error) {
+      logger.error('Failed to setup rate limiting:', error);
+      throw new Error(`Failed to setup rate limiting: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async setupDDoSRules(config: { zoneId: string; config: DDoSRule }): Promise<void> {
+    try {
+      // Configure DDoS protection settings
+      await this.makeRequest(`/zones/${config.zoneId}/security/ddos`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          // Enable advanced DDoS protection
+          advanced_ddos: true,
+          // Configure threshold-based rules
+          threshold_rules: [{
+            threshold: config.config.threshold,
+            mitigation_timeout: 3600, // 1 hour
+            mitigation_actions: config.config.mitigation
+          }],
+          // Enable adaptive protection
+          adaptive_protection: {
+            enabled: true,
+            sensitivity_level: 'high'
+          }
+        })
+      });
+
+      // Setup additional security rules
+      await this.makeRequest(`/zones/${config.zoneId}/firewall/rules`, {
+        method: 'POST',
+        body: JSON.stringify({
+          rules: [
+            {
+              description: 'DDoS Protection - Anomaly Detection',
+              action: 'challenge',
+              expression: `(http.request.rate gt ${config.config.threshold} and ip.src.threat_score gt 20)`,
+              enabled: true
+            },
+            {
+              description: 'DDoS Protection - Burst Rate Control',
+              action: 'block',
+              expression: `(http.request.rate.burst gt ${config.config.threshold * 2})`,
+              enabled: true
+            }
+          ]
+        })
+      });
+
+      logger.info('DDoS protection rules configured successfully', {
+        zoneId: config.zoneId,
+        threshold: config.config.threshold,
+        mitigations: config.config.mitigation
+      });
+    } catch (error) {
+      logger.error('Failed to setup DDoS rules:', error);
+      throw new Error(`Failed to setup DDoS rules: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async setupSecurityHeaders(domain: string): Promise<void> {
+    try {
+      await this.makeRequest(`/zones/${this.zoneId}/settings/security_header`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          value: {
+            enabled: true,
+            // Configure strict security headers
+            strict_transport_security: {
+              enabled: true,
+              max_age: 31536000,
+              include_subdomains: true,
+              preload: true
+            },
+            content_security_policy: {
+              enabled: true,
+              policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+            },
+            x_content_type_options: {
+              enabled: true
+            },
+            x_frame_options: {
+              enabled: true,
+              value: 'DENY'
+            },
+            x_xss_protection: {
+              enabled: true,
+              value: '1; mode=block'
+            }
+          }
+        })
+      });
+
+      logger.info('Security headers configured successfully', { domain });
+    } catch (error) {
+      logger.error('Failed to setup security headers:', error);
+      throw new Error(`Failed to setup security headers: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async setupWAFRules(domain: string, rules: string[]): Promise<void> {
+    try {
+      // Enable Cloudflare WAF
+      await this.makeRequest(`/zones/${this.zoneId}/firewall/waf`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          enabled: true,
+          sensitivity: 'high',
+          action: 'challenge'
+        })
+      });
+
+      // Configure specific WAF rules
+      for (const rule of rules) {
+        await this.makeRequest(`/zones/${this.zoneId}/firewall/waf/packages/${rule}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            sensitivity: 'high',
+            action_mode: 'challenge'
+          })
+        });
+      }
+
+      logger.info('WAF rules configured successfully', { domain, rules });
+    } catch (error) {
+      logger.error('Failed to setup WAF rules:', error);
+      throw new Error(`Failed to setup WAF rules: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 } 

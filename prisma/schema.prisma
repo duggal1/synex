@@ -6,6 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
   id            String     @id @default(uuid())
   clerkId       String     @unique
@@ -30,6 +31,9 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Security relations
+  userRoles UserRole[]
 
   @@index([subscriptionStatus])
   @@index([email])
@@ -81,6 +85,13 @@ model Project {
   EdgeMetrics        EdgeMetrics[]
 
   optimizationMetrics OptimizationMetrics[]
+
+  // Security relations
+  securityConfig    SecurityConfig?
+  roles             Role[]
+  userRoles         UserRole[]
+  securityAuditLogs SecurityAuditLog[]
+  wafRules          WAFRule[]
 
   @@index([userId])
   @@index([status])
@@ -461,4 +472,131 @@ model OptimizationMetrics {
   @@index([projectId])
   @@index([type])
   @@index([timestamp])
+}
+
+// Security-related models
+model SecurityConfig {
+  id        String  @id @default(cuid())
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // WAF Configuration
+  wafEnabled Boolean @default(true)
+  wafRules   Json? // Array of enabled WAF rules
+  rateLimit  Json? // Rate limiting configuration
+
+  // DDoS Protection
+  ddosProtection Json? // DDoS protection settings
+
+  // Security Headers
+  securityHeaders Json? // Custom security headers
+
+  // Access Control
+  ipAllowList String[] // Allowed IP addresses
+  ipDenyList  String[] // Blocked IP addresses
+
+  // Audit and Monitoring
+  auditEnabled Boolean @default(true)
+  auditConfig  Json? // Audit logging configuration
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  permissions String[] // Array of permission strings
+
+  // Role metadata
+  description String?
+  isSystem    Boolean @default(false)
+
+  // Role assignments
+  userRoles UserRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+model UserRole {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, roleId, projectId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([projectId])
+}
+
+model SecurityAuditLog {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Event details
+  eventType String // 'AUTH', 'WAF', 'DDOS', 'RBAC', etc.
+  severity  String // 'INFO', 'WARN', 'ERROR', 'CRITICAL'
+  action    String // 'BLOCK', 'ALLOW', 'CHALLENGE', etc.
+
+  // Request details
+  ip        String?
+  userAgent String?
+  method    String?
+  path      String?
+
+  // Response
+  statusCode Int?
+  response   Json?
+
+  // Additional data
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([projectId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([timestamp])
+}
+
+model WAFRule {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Rule configuration
+  name        String
+  description String?
+  type        String // 'CUSTOM', 'OWASP', 'RATE_LIMIT', etc.
+  priority    Int     @default(1)
+  action      String // 'BLOCK', 'CHALLENGE', 'LOG', etc.
+
+  // Rule definition
+  conditions Json // Rule matching conditions
+  parameters Json? // Additional rule parameters
+
+  // Status
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
+  @@index([projectId])
+  @@index([type])
 }
