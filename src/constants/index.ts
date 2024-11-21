@@ -53,7 +53,7 @@ export const features = [
 
 export const pricingCards = [
     {
-        title: "Starter",
+        title: "Starter🚀",
         description: "Perfect for trying out plura",
         price: "Free",
         duration: "",
