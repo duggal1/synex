@@ -4,17 +4,17 @@ export const perks = [
     {
         icon: Icons.auth,
         title: "Sign Up",
-        info: "Create your free account to get started with Astra.",
+        info: "Create your free account to get started with Astra.✨",
     },
     {
         icon: Icons.customize,
         title: "Customize",
-        info: "Choose a template and customize it to fit your needs.",
+        info: "Choose a template and customize it to fit your needs.🚀",
     },
     {
         icon: Icons.launch,
         title: "Launch",
-        info: "Publish your website and share it with the world.",
+        info: "🌟Publish your website and share it with the world.",
     },
 ];
 
