@@ -34,6 +34,8 @@ export async function GET(
       invoiceItemRate: true,
       total: true,
       note: true,
+      status: true,
+      paidAt: true,
     },
   });
 
@@ -77,6 +79,19 @@ export async function GET(
     45
   );
   pdf.text(`Due Date: Net ${data.dueDate}`, 120, 50);
+
+  // Add paid status if applicable
+  if (data.status === "PAID" && data.paidAt) {
+    pdf.setFontSize(14);
+    pdf.setTextColor(16, 185, 129); // Emerald color
+    pdf.text(
+      `PAID on ${data.paidAt.toLocaleDateString("en-US", {
+        dateStyle: "long",
+      })}`,
+      120,
+      55
+    );
+  }
 
   // Item table header
   pdf.setFontSize(10);

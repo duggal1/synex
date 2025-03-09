@@ -87,6 +87,7 @@ model Invoice {
   total         Int
   status        InvoiceStatus
   date          DateTime
+  paidAt        DateTime?
   dueDate       Int
   fromName      String
   fromEmail     String

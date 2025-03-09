@@ -40,25 +40,25 @@
 
   /* Default color scheme is now dark mode */
   :root {
-    --background: 235 30% 2%;
-    --foreground: 235 10% 98%;
-    --card: 235 32% 3%;
-    --card-foreground: 235 10% 98%;
-    --popover: 235 32% 3%;
-    --popover-foreground: 235 10% 98%;
-    --primary: 230 100% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 235 85% 65%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 235 25% 8%;
-    --muted-foreground: 235 20% 75%;
-    --accent: 240 95% 65%;
-    --accent-foreground: 0 0% 100%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 235 25% 8%;
-    --input: 235 25% 8%;
-    --ring: 230 100% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 80%;
     --chart-1: 230 90% 60%;
     --chart-2: 235 85% 65%;
     --chart-3: 240 80% 70%;
@@ -113,7 +113,7 @@
   [type="reset"],
   [type="submit"],
   .button {
-    @apply rounded-full px-4 py-2 transition-all duration-200;
+    @apply rounded-full transition-all duration-200;
   }
   
   /* Toggle elements, checkbox, radio buttons, etc. */
@@ -130,7 +130,7 @@
   .menu-button,
   .dropdown-trigger,
   .more-options {
-    @apply rounded-full flex items-center justify-center h-8 w-8 transition-all hover:bg-muted;
+    @apply flex justify-center items-center hover:bg-white/5 rounded-full transition-all;
   }
   
   /* Three dots/kebab menu or similar controls */
@@ -138,7 +138,7 @@
   .kebab-menu,
   .ellipsis-menu,
   .options-menu {
-    @apply rounded-full p-2 hover:bg-muted transition-all duration-200;
+    @apply hover:bg-muted p-2 rounded-full transition-all duration-200;
   }
   
   /* Input elements */
@@ -151,12 +151,51 @@
   /* Icons that serve as buttons */
   button > svg,
   .icon-button {
-    @apply rounded-full p-2 hover:bg-muted transition-colors duration-200;
+    @apply transition-colors duration-200;
   }
   
   /* Cards with more rounded corners */
   .card {
     @apply rounded-xl overflow-hidden;
+  }
+
+  /* Modern toast styling */
+  [data-sonner-toaster] {
+    @apply top-4 right-4 fixed;
+  }
+
+  [data-sonner-toast] {
+    @apply bg-black/60 backdrop-blur-sm border border-neutral-800/50 !important;
+    @apply shadow-lg rounded-xl !important;
+    @apply text-neutral-200 !important;
+  }
+
+  [data-sonner-toast][data-type="success"] {
+    @apply bg-emerald-500/10 border-emerald-500/20 !important;
+  }
+
+  [data-sonner-toast][data-type="error"] {
+    @apply bg-red-500/10 border-red-500/20 !important;
+  }
+
+  [data-sonner-toast][data-type="loading"] {
+    @apply bg-blue-500/10 border-blue-500/20 !important;
+  }
+
+  [data-sonner-toast] [data-icon] {
+    @apply text-neutral-400;
+  }
+
+  [data-sonner-toast][data-type="success"] [data-icon] {
+    @apply text-emerald-500;
+  }
+
+  [data-sonner-toast][data-type="error"] [data-icon] {
+    @apply text-red-500;
+  }
+
+  [data-sonner-toast][data-type="loading"] [data-icon] {
+    @apply text-white;
   }
 }
 
@@ -170,12 +209,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(56, 89, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 0.1rem;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #030711;
+  background-color: transparent;
 }
 
 img, image {
@@ -203,4 +242,21 @@ img, image {
   background: linear-gradient(90deg, #3859ff, #8580ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fade-in-up 0.7s cubic-bezier(0.2, 0.0, 0.2, 1.0) forwards;
+  }
+  
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

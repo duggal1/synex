@@ -8,54 +8,88 @@ import {
 import { Graph } from "./Graph";
 import prisma from "../utils/db";
 import { requireUser } from "../utils/hooks";
+import { formatCurrency } from "../utils/formatCurrency";
+import { cn } from "@/lib/utils";
 
 async function getInvoices(userId: string) {
   const rawData = await prisma.invoice.findMany({
     where: {
-      status: "PAID",
       userId: userId,
-      createdAt: {
-        lte: new Date(),
-        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      },
+      OR: [
+        {
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+          },
+        },
+        {
+          paidAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
+        },
+      ],
     },
     select: {
       createdAt: true,
+      paidAt: true,
       total: true,
+      status: true,
     },
     orderBy: {
       createdAt: "asc",
     },
   });
 
-  //Group and aggregate data by date
-  const aggregatedData = rawData.reduce(
-    (acc: { [key: string]: number }, curr) => {
-      const date = new Date(curr.createdAt).toLocaleDateString("en-US", {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const allDates: { [key: string]: { totalAmount: number; paidAmount: number; unpaidAmount: number } } = {};
+
+  // Initialize all dates
+  for (let d = new Date(sevenDaysAgo); d <= tomorrow; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    allDates[dateStr] = { totalAmount: 0, paidAmount: 0, unpaidAmount: 0 };
+  }
+
+  // Process invoices
+  rawData.forEach((invoice) => {
+    const createdDateStr = invoice.createdAt.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    
+    if (allDates[createdDateStr]) {
+      allDates[createdDateStr].totalAmount += invoice.total;
+      
+      // If invoice is pending, add to unpaid amount on creation date
+      if (invoice.status === "PENDING") {
+        allDates[createdDateStr].unpaidAmount += invoice.total;
+      }
+    }
+
+    // If invoice is paid, add to paid amount on the payment date or creation date
+    if (invoice.status === "PAID") {
+      const paidDateStr = (invoice.paidAt || invoice.createdAt).toLocaleDateString("en-US", {
+        weekday: "short",
         month: "short",
         day: "numeric",
       });
+      
+      if (allDates[paidDateStr]) {
+        allDates[paidDateStr].paidAmount += invoice.total;
+      }
+    }
+  });
 
-      acc[date] = (acc[date] || 0) + curr.total;
-
-      return acc;
-    },
-    {}
-  );
-  //Convert to array and from the object
-  const transformedData = Object.entries(aggregatedData)
-    .map(([date, amount]) => ({
+  return Object.entries(allDates)
+    .map(([date, amounts]) => ({
       date,
-      amount,
-      originalDate: new Date(date + ", " + new Date().getFullYear()),
+      ...amounts,
     }))
-    .sort((a, b) => a.originalDate.getTime() - b.originalDate.getTime())
-    .map(({ date, amount }) => ({
-      date,
-      amount,
-    }));
-
-  return transformedData;
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 export async function InvoiceGraph() {
@@ -63,14 +97,21 @@ export async function InvoiceGraph() {
   const data = await getInvoices(session.user?.id as string);
 
   return (
-    <Card className="lg:col-span-2">
+    <Card className={cn(
+      "col-span-2 lg:col-span-2 w-full",
+      "bg-black/40 backdrop-blur-sm",
+      "border border-neutral-800/50",
+      "animate-fade-in-up"
+    )}>
       <CardHeader>
-        <CardTitle>Paid Invoices</CardTitle>
-        <CardDescription>
-          Invoices which have been paid in the last 30 days.
+        <CardTitle className="font-medium text-xl tracking-wide">
+          Revenue Overview
+        </CardTitle>
+        <CardDescription className="text-neutral-400">
+          Track your revenue trends over the past 7 days
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-[400px]">
         <Graph data={data} />
       </CardContent>
     </Card>

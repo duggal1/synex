@@ -2,6 +2,7 @@ import prisma from "@/app/utils/db";
 import { requireUser } from "@/app/utils/hooks";
 import { emailClient } from "@/app/utils/mailtrap";
 import { NextResponse } from "next/server";
+import { formatCurrency } from "@/app/utils/formatCurrency";
 
 export async function POST(
   request: Request,
@@ -13,7 +14,6 @@ export async function POST(
 ) {
   try {
     const session = await requireUser();
-
     const { invoiceId } = await params;
 
     const invoiceData = await prisma.invoice.findUnique({
@@ -24,30 +24,55 @@ export async function POST(
     });
 
     if (!invoiceData) {
-      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Invoice not found" },
+        { status: 404 }
+      );
+    }
+
+    // Don't send reminder if already paid
+    if (invoiceData.status === "PAID") {
+      return NextResponse.json(
+        { error: "Invoice is already paid" },
+        { status: 400 }
+      );
     }
 
     const sender = {
-      email: "hello@synthicai.com ",
+      email: "hello@synthicai.com",
       name: "Duggal",
     };
 
-    emailClient.send({
+    const formattedAmount = formatCurrency({
+      amount: invoiceData.total,
+      currency: invoiceData.currency as any,
+    });
+
+    const dueDate = new Date(invoiceData.date);
+    dueDate.setDate(dueDate.getDate() + invoiceData.dueDate);
+
+    await emailClient.send({
       from: sender,
-      to: [{ email: invoiceData.clientEmail }], // Use the client's email from invoice data
+      to: [{ email: invoiceData.clientEmail }],
       template_uuid: "bd360be3-3027-41f1-a3c9-736efc8455db",
       template_variables: {
         first_name: invoiceData.clientName,
         company_info_name: invoiceData.fromName,
         company_info_address: invoiceData.fromAddress,
-        company_info_city: "", // You might want to add these fields to your invoice schema
-        company_info_zip_code: "",
-        company_info_country: "",
+        invoice_number: `#${invoiceData.invoiceNumber}`,
+        invoice_amount: formattedAmount,
+        due_date: dueDate.toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
       },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("Error sending reminder:", error);
     return NextResponse.json(
       { error: "Failed to send Email reminder" },
       { status: 500 }
