@@ -19,6 +19,7 @@ import { signOut } from "../utils/auth";
 import prisma from "../utils/db";
 import { redirect } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
+import { SessionProvider } from "../components/SessionProvider";
 
 async function getUser(userId: string) {
   const data = await prisma.user.findUnique({
@@ -45,20 +46,22 @@ export default async function DashboardLayout({
   const session = await requireUser();
   const data = await getUser(session.user?.id as string);
   return (
-    <>
-      <div className="grid min-h-screen w-full md:gird-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-        <div className="hidden border-r bg-muted/40 md:block">
-          <div className="flex flex-col max-h-screen h-full gap-2">
-            <div className="h-14 flex items-center border-b px-4 lg:h-[60px] lg:px-6">
+    <SessionProvider>
+      <div className="grid lg:grid-cols-[280px_1fr] w-full min-h-screen md:gird-cols-[220px_1fr]">
+        <div className="hidden md:block bg-muted/40 border-r">
+          <div className="flex flex-col gap-2 h-full max-h-screen">
+            <div className="flex items-center px-4 lg:px-6 border-b h-14 lg:h-[60px]">
               <Link href="/" className="flex items-center gap-2">
                 <Image src={Logo} alt="Logo" className="size-7" />
-                <p className="text-2xl font-bold">
-                  Invoice<span className="text-blue-600">Marshal</span>
-                </p>
+                <span className="font-bold text-2xl">
+                  <span className="font-black text-neutral-100 text-3xl">Synex 
+                    <span className="text-[#3e21ff]">AI</span>
+                  </span>
+                </span>
               </Link>
             </div>
             <div className="flex-1">
-              <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              <nav className="items-start grid px-2 lg:px-4 font-medium text-sm">
                 <DashboardLinks />
               </nav>
             </div>
@@ -66,7 +69,7 @@ export default async function DashboardLayout({
         </div>
 
         <div className="flex flex-col">
-          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <header className="flex items-center gap-4 bg-muted/40 px-4 lg:px-6 border-b h-14 lg:h-[60px]">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="md:hidden">
@@ -74,7 +77,7 @@ export default async function DashboardLayout({
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">
-                <nav className="grid gap-2 mt-10">
+                <nav className="gap-2 grid mt-10">
                   <DashboardLinks />
                 </nav>
               </SheetContent>
@@ -100,6 +103,19 @@ export default async function DashboardLayout({
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/invoices">Invoices</Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/revenue">Revenue</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/upgrade">Upgrade</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/invoice-builder">Invoice Builder</Link>
+                  </DropdownMenuItem>
+                 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <form
@@ -116,12 +132,12 @@ export default async function DashboardLayout({
               </DropdownMenu>
             </div>
           </header>
-          <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+          <main className="flex flex-col flex-1 gap-4 lg:gap-6 p-4 lg:p-6">
             {children}
           </main>
         </div>
       </div>
       <Toaster richColors closeButton theme="light" />
-    </>
+    </SessionProvider>
   );
 }

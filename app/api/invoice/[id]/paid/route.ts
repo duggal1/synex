@@ -7,17 +7,17 @@ export async function PATCH(
   {
     params,
   }: {
-    params: Promise<{ invoiceId: string }>;
+    params: Promise<{ id: string }>;
   }
 ) {
   try {
     const session = await requireUser();
-    const { invoiceId } = await params;
+    const { id } = await params;
 
     // Verify invoice belongs to user and exists
     const invoice = await prisma.invoice.findUnique({
       where: {
-        id: invoiceId,
+        id: id,
         userId: session.user?.id,
       },
     });
@@ -32,7 +32,7 @@ export async function PATCH(
     // Update invoice status and set paidAt to current date
     const updatedInvoice = await prisma.invoice.update({
       where: {
-        id: invoiceId,
+        id: id,
       },
       data: {
         status: "PAID",

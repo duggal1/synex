@@ -8,14 +8,14 @@ export async function GET(
   {
     params,
   }: {
-    params: Promise<{ invoiceId: string }>;
+    params: Promise<{ id: string }>;
   }
 ) {
-  const { invoiceId } = await params;
+  const { id } = await params;
 
   const data = await prisma.invoice.findUnique({
     where: {
-      id: invoiceId,
+      id: id,
     },
     select: {
       invoiceName: true,
@@ -151,4 +151,4 @@ export async function GET(
       "Content-Disposition": "inline",
     },
   });
-}
+} 

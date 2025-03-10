@@ -74,6 +74,10 @@ async function getData(userId: string) {
     if (invoice.status === "PAID") {
       acc.paidAmount += invoice.total;
       acc.paidCount++;
+
+      // For now, assume all paid invoices are manual payments
+      // Once the schema is updated, we can track by payment method
+      acc.manualPaymentAmount += invoice.total;
     } else {
       acc.pendingAmount += invoice.total;
       acc.pendingCount++;
@@ -96,6 +100,8 @@ async function getData(userId: string) {
     paidCount: 0,
     pendingAmount: 0,
     pendingCount: 0,
+    manualPaymentAmount: 0,
+    onlinePaymentAmount: 0,
   });
 
   // Calculate growth rates
@@ -117,6 +123,10 @@ async function getData(userId: string) {
   const dailyGrowth = previousDailyAverage === 0 ? 100 :
     Math.round(((dailyAverage - previousDailyAverage) / previousDailyAverage) * 100);
 
+  // Calculate online payment metrics
+  const onlinePaymentPercentage = metrics.paidAmount === 0 ? 0 :
+    Math.round((metrics.onlinePaymentAmount / metrics.paidAmount) * 100);
+
   return {
     totalRevenue: metrics.totalRevenue,
     paidAmount: metrics.paidAmount,
@@ -132,6 +142,9 @@ async function getData(userId: string) {
     dailyGrowth,
     lastSevenDaysTotal: metrics.lastSevenDaysTotal,
     lastSevenDaysPaid: metrics.lastSevenDaysPaid,
+    onlinePaymentAmount: metrics.onlinePaymentAmount,
+    manualPaymentAmount: metrics.manualPaymentAmount,
+    onlinePaymentPercentage,
   };
 }
 

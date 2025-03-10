@@ -9,16 +9,16 @@ export async function POST(
   {
     params,
   }: {
-    params: Promise<{ invoiceId: string }>;
+    params: Promise<{ id: string }>;
   }
 ) {
   try {
     const session = await requireUser();
-    const { invoiceId } = await params;
+    const { id } = await params;
 
     const invoiceData = await prisma.invoice.findUnique({
       where: {
-        id: invoiceId,
+        id: id,
         userId: session.user?.id,
       },
     });
@@ -54,7 +54,7 @@ export async function POST(
     await emailClient.send({
       from: sender,
       to: [{ email: invoiceData.clientEmail }],
-      template_uuid: "bd360be3-3027-41f1-a3c9-736efc8455db",
+      template_uuid: "facd5565-54b5-48c7-a71e-51002283d4f3",
       template_variables: {
         first_name: invoiceData.clientName,
         company_info_name: invoiceData.fromName,
@@ -78,4 +78,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+} 
