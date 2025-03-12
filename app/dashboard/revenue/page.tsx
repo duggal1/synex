@@ -5,6 +5,7 @@ import prisma from "@/app/utils/db";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { cn } from "@/lib/utils";
 import { RevenueDashboard } from "@/app/components/RevenueDashboard";
+import { CurrencyType } from "@/app/types/currency";
 
 async function getRevenueData(userId: string) {
   // Get time periods
@@ -23,7 +24,7 @@ async function getRevenueData(userId: string) {
     });
   }
   
-  // Fetch all invoices
+  // Fetch all invoices with payment details
   const invoices = await prisma.invoice.findMany({
     where: {
       userId,
@@ -36,6 +37,14 @@ async function getRevenueData(userId: string) {
       paidAt: true,
       currency: true,
       paymentMethod: true,
+      paymentDetails: {
+        select: {
+          amount: true,
+          paymentStatus: true,
+          paymentMethod: true,
+          createdAt: true
+        }
+      }
     },
   });
 
@@ -111,6 +120,12 @@ async function getRevenueData(userId: string) {
     ? Math.round(totalRevenue / invoices.length) 
     : 0;
 
+  // Get recent successful payments
+  const recentPayments = invoices
+    .filter(invoice => invoice.status === "PAID" && invoice.paidAt)
+    .sort((a, b) => (b.paidAt?.getTime() || 0) - (a.paidAt?.getTime() || 0))
+    .slice(0, 5);
+
   return {
     monthlyRevenue,
     paymentMethodsData,
@@ -121,6 +136,7 @@ async function getRevenueData(userId: string) {
     totalPaid,
     totalPaymentRate,
     averageInvoiceValue,
+    recentPayments
   };
 }
 
@@ -129,9 +145,9 @@ export default async function RevenuePage() {
   const data = await getRevenueData(session.user?.id as string);
 
   return (
-    <div className="space-y-8 p-6 bg-[#030303] min-h-screen">
+    <div className="space-y-8 bg-[#030303] p-6 min-h-screen">
       <div>
-        <h1 className="font-bold text-3xl tracking-tight text-white/90 mb-2">Revenue Dashboard</h1>
+        <h1 className="mb-2 font-bold text-white/90 text-3xl tracking-tight">Revenue Dashboard</h1>
         <p className="text-zinc-400">
           Track your revenue and payment analytics
         </p>
@@ -237,6 +253,42 @@ export default async function RevenuePage() {
       </div>
 
       <RevenueDashboard data={data} />
+
+      <Card className={cn(
+        "relative overflow-hidden",
+        "bg-black/40",
+        "border-zinc-800/30",
+        "backdrop-blur-xl"
+      )}>
+        <CardHeader>
+          <CardTitle className="text-neutral-400 text-sm">Recent Payments</CardTitle>
+          <CardDescription>
+            Your latest successful payments
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {data.recentPayments.map((payment) => (
+              <div key={payment.id} className="flex justify-between items-center bg-black/20 p-4 rounded-lg">
+                <div>
+                  <p className="font-medium">Payment #{payment.id.slice(0, 8)}</p>
+                  <p className="text-neutral-500 text-sm">
+                    {payment.paidAt?.toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-emerald-500">
+                    {formatCurrency({ amount: payment.total, currency: (payment.currency as CurrencyType) || "USD" })}
+                  </p>
+                  <p className="text-neutral-500 text-sm">
+                    via {payment.paymentMethod}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
