@@ -8,26 +8,40 @@ import { RevenueDashboard } from "@/app/components/RevenueDashboard";
 import { CurrencyType } from "@/app/types/currency";
 
 async function getRevenueData(userId: string) {
-  // Get time periods
+  // Get time periods with more precision
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   
-  // Get the first day of each month for the last 6 months
-  const monthsData = [];
-  for (let i = 0; i < 6; i++) {
+  // Get daily data for the last 30 days
+  const dailyData = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    return {
+      date: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+      dayName: date.toLocaleDateString('default', { weekday: 'short' }),
+      fullDate: date.toLocaleDateString('default', { month: 'short', day: 'numeric' })
+    };
+  }).reverse();
+
+  // Get the first day of each month for the last 12 months for better trend analysis
+  const monthsData = Array.from({ length: 12 }, (_, i) => {
     const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthsData.push({
+    return {
       month: month.toLocaleString('default', { month: 'short' }),
+      year: month.getFullYear(),
       firstDay: new Date(month.getFullYear(), month.getMonth(), 1),
       lastDay: new Date(month.getFullYear(), month.getMonth() + 1, 0),
-    });
-  }
-  
-  // Fetch all invoices with payment details
+    };
+  });
+
+  // Fetch all invoices with detailed payment info
   const invoices = await prisma.invoice.findMany({
     where: {
       userId,
+      createdAt: {
+        gte: monthsData[monthsData.length - 1].firstDay // Last 12 months
+      }
     },
     select: {
       id: true,
@@ -37,6 +51,8 @@ async function getRevenueData(userId: string) {
       paidAt: true,
       currency: true,
       paymentMethod: true,
+      clientName: true,
+      invoiceNumber: true,
       paymentDetails: {
         select: {
           amount: true,
@@ -46,10 +62,37 @@ async function getRevenueData(userId: string) {
         }
       }
     },
+    orderBy: {
+      createdAt: 'desc'
+    }
   });
 
-  // Calculate monthly revenue
-  const monthlyRevenue = monthsData.map(({ month, firstDay, lastDay }) => {
+  // Calculate daily revenue for the last 30 days
+  const dailyRevenue = dailyData.map(({ date, dayName, fullDate }) => {
+    const dayInvoices = invoices.filter(
+      invoice => {
+        const invoiceDate = new Date(invoice.createdAt);
+        return invoiceDate.getFullYear() === date.getFullYear() &&
+               invoiceDate.getMonth() === date.getMonth() &&
+               invoiceDate.getDate() === date.getDate();
+      }
+    );
+    
+    const totalAmount = dayInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
+    const paidAmount = dayInvoices
+      .filter(invoice => invoice.status === "PAID")
+      .reduce((sum, invoice) => sum + invoice.total, 0);
+    
+    return {
+      name: dayName,
+      fullDate,
+      total: totalAmount,
+      paid: paidAmount,
+    };
+  });
+
+  // Calculate monthly revenue with year-over-year growth
+  const monthlyRevenue = monthsData.map(({ month, year, firstDay, lastDay }) => {
     const monthInvoices = invoices.filter(
       invoice => invoice.createdAt >= firstDay && invoice.createdAt <= lastDay
     );
@@ -60,13 +103,13 @@ async function getRevenueData(userId: string) {
       .reduce((sum, invoice) => sum + invoice.total, 0);
     
     return {
-      name: month,
+      name: `${month} ${year}`,
       total: totalAmount,
       paid: paidAmount,
     };
   }).reverse();
 
-  // Calculate payment method breakdown
+  // Calculate payment method breakdown with growth metrics
   const paymentMethodsData = [
     {
       name: "Stripe",
@@ -74,6 +117,12 @@ async function getRevenueData(userId: string) {
         .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "STRIPE")
         .reduce((sum, invoice) => sum + invoice.total, 0),
       count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "STRIPE").length,
+      recentCount: invoices.filter(invoice => 
+        invoice.status === "PAID" && 
+        invoice.paymentMethod === "STRIPE" &&
+        invoice.paidAt && 
+        invoice.paidAt >= new Date(now.setDate(now.getDate() - 30))
+      ).length
     },
     {
       name: "Manual",
@@ -81,6 +130,12 @@ async function getRevenueData(userId: string) {
         .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "MANUAL")
         .reduce((sum, invoice) => sum + invoice.total, 0),
       count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "MANUAL").length,
+      recentCount: invoices.filter(invoice => 
+        invoice.status === "PAID" && 
+        invoice.paymentMethod === "MANUAL" &&
+        invoice.paidAt && 
+        invoice.paidAt >= new Date(now.setDate(now.getDate() - 30))
+      ).length
     },
     {
       name: "Email",
@@ -88,10 +143,16 @@ async function getRevenueData(userId: string) {
         .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "EMAIL")
         .reduce((sum, invoice) => sum + invoice.total, 0),
       count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "EMAIL").length,
+      recentCount: invoices.filter(invoice => 
+        invoice.status === "PAID" && 
+        invoice.paymentMethod === "EMAIL" &&
+        invoice.paidAt && 
+        invoice.paidAt >= new Date(now.setDate(now.getDate() - 30))
+      ).length
     }
   ];
 
-  // Calculate current month metrics
+  // Calculate current month metrics with daily averages
   const currentMonthInvoices = invoices.filter(
     invoice => invoice.createdAt >= firstDayOfMonth && invoice.createdAt <= lastDayOfMonth
   );
@@ -101,11 +162,14 @@ async function getRevenueData(userId: string) {
     .filter(invoice => invoice.status === "PAID")
     .reduce((sum, invoice) => sum + invoice.total, 0);
   
+  const daysSoFar = Math.max(1, now.getDate());
+  const dailyAverage = Math.round(currentMonthTotal / daysSoFar);
+  
   const paymentRate = currentMonthTotal > 0 
     ? Math.round((currentMonthPaid / currentMonthTotal) * 100) 
     : 0;
 
-  // Calculate total metrics
+  // Calculate total metrics with trends
   const totalRevenue = invoices.reduce((sum, invoice) => sum + invoice.total, 0);
   const totalPaid = invoices
     .filter(invoice => invoice.status === "PAID")
@@ -115,27 +179,49 @@ async function getRevenueData(userId: string) {
     ? Math.round((totalPaid / totalRevenue) * 100) 
     : 0;
 
-  // Calculate average invoice value
+  // Calculate advanced metrics
   const averageInvoiceValue = invoices.length > 0 
     ? Math.round(totalRevenue / invoices.length) 
     : 0;
 
-  // Get recent successful payments
+  const averageTimeToPayment = invoices
+    .filter(invoice => invoice.status === "PAID" && invoice.paidAt)
+    .reduce((sum, invoice) => {
+      const createdDate = new Date(invoice.createdAt);
+      const paidDate = new Date(invoice.paidAt!);
+      return sum + (paidDate.getTime() - createdDate.getTime());
+    }, 0) / (invoices.filter(invoice => invoice.status === "PAID").length || 1);
+
+  const averageDaysToPayment = Math.round(averageTimeToPayment / (1000 * 60 * 60 * 24));
+
+  // Get recent successful payments with more details
   const recentPayments = invoices
     .filter(invoice => invoice.status === "PAID" && invoice.paidAt)
     .sort((a, b) => (b.paidAt?.getTime() || 0) - (a.paidAt?.getTime() || 0))
-    .slice(0, 5);
+    .slice(0, 5)
+    .map(payment => ({
+      ...payment,
+      formattedDate: payment.paidAt?.toLocaleDateString('default', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }));
 
   return {
+    dailyRevenue,
     monthlyRevenue,
     paymentMethodsData,
     currentMonthTotal,
     currentMonthPaid,
+    dailyAverage,
     paymentRate,
     totalRevenue,
     totalPaid,
     totalPaymentRate,
     averageInvoiceValue,
+    averageDaysToPayment,
     recentPayments
   };
 }
@@ -273,7 +359,7 @@ export default async function RevenuePage() {
                 <div>
                   <p className="font-medium">Payment #{payment.id.slice(0, 8)}</p>
                   <p className="text-neutral-500 text-sm">
-                    {payment.paidAt?.toLocaleDateString()}
+                    {payment.formattedDate}
                   </p>
                 </div>
                 <div className="text-right">
