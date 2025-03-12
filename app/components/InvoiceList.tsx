@@ -89,8 +89,8 @@ export async function InvoiceList() {
                       className={cn(
                         "rounded-full px-2 py-0.5 text-xs font-medium",
                         invoice.status === 'PAID' && "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-                        invoice.status === 'PENDING' && "bg-orange-500/10 text-red-600 border-orange-500/20",
-                       // invoice.status === 'OVERDUE' && "bg-red-500/10 text-red-500 border-red-500/20"
+                        invoice.status === 'PENDING' && "bg-orange-500/10 text-orange-500 border-orange-500/20",
+                        invoice.status === 'OVERDUE' && "bg-red-500/10 text-red-500 border-red-500/20"
                       )}
                     >
                       {invoice.status}

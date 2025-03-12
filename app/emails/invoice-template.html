@@ -475,29 +475,31 @@
               </div>
               
               <!-- Button Section -->
-              <div class="button-container" style="margin: 20px 0;">
+              <div class="button-container">
                 <a href="{{invoiceLink}}" class="button">View Invoice</a>
-                {{#if stripeEnabled}}
-                <a href="{{paymentLink}}" class="pay-button" target="_blank" rel="noopener noreferrer">{{payNowText}}</a>
+                {{#if showPayButton}}
+                  {{#if paymentLink}}
+                    <a href="{{paymentLink}}" class="pay-button">{{payNowText}}</a>
+                  {{/if}}
                 {{/if}}
               </div>
 
               <!-- Payment Information -->
               <div class="payment-info">
-                {{#if stripeEnabled}}
-                <p style="font-size: 14px; color: #4b5563; margin: 8px 0;">
-                  You can pay this invoice securely online via credit card
-                </p>
+                {{#if paymentEnabled}}
+                  <p class="text-sm text-zinc-600">
+                    {{paymentMethod}}
+                  </p>
                 {{else}}
-                <p style="font-size: 14px; color: #4b5563; margin: 8px 0;">
-                  Please contact us for payment instructions
-                </p>
+                  <p class="text-sm text-zinc-600">
+                    Please contact us for payment instructions.
+                  </p>
                 {{/if}}
               </div>
               
               <!-- Add payment terms section -->
               <div class="payment-terms">
-                <p class="mt-4 text-zinc-500 text-sm">
+                <p class="text-sm text-zinc-500 mt-4">
                   Payment Terms: Due {{#if gracePeriod}}within {{gracePeriod}} days{{else}}upon receipt{{/if}}
                 </p>
               </div>

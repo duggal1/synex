@@ -17,7 +17,8 @@ import {
   ArrowRight, 
   Shield, 
   Clock, 
-  CheckCircle2 
+  CheckCircle2,
+  CreditCard
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -30,8 +31,8 @@ import {
   createCheckoutSession
 } from "./actions";
 import { PaymentStatus, SubscriptionPlan } from "@prisma/client";
-import { Progress } from "@/components/ui/progress";
 import StripeCheckout from "@/app/components/StripeCheckout";
+import Loader from "@/components/Loader";
 
 interface SubscriptionData {
   planType: SubscriptionPlan | "FREE";
@@ -48,6 +49,7 @@ interface Plan {
   highlight?: boolean;
   icon: React.ReactNode;
   originalPrice?: number;
+  description: string;
 }
 
 const calculateAnnualPrice = (monthlyPrice: number) => {
@@ -73,6 +75,7 @@ const plans: Plan[] = [
     price: 19.99,
     interval: "month",
     icon: <Zap className="w-5 h-5" />,
+    description: "Perfect for individuals and small teams getting started",
     features: [
       "Unlimited invoices",
       "Custom branding",
@@ -90,6 +93,7 @@ const plans: Plan[] = [
     interval: "year",
     highlight: true,
     icon: <Sparkles className="w-5 h-5" />,
+    description: "Best value for businesses serious about growth",
     features: [
       "All Pro Monthly features",
       `Save ${calculateAnnualPrice(19.99).savingsPercentage}% (${formatPrice(calculateAnnualPrice(19.99).savings)}/year)`,
@@ -100,89 +104,6 @@ const plans: Plan[] = [
     ],
   },
 ];
-
-const SubscriptionStatusCard = ({ subscription }: { subscription: SubscriptionData }) => {
-  const isYearly = subscription.planType === "PRO_YEARLY";
-  const endDate = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null;
-  const daysRemaining = endDate 
-    ? Math.max(0, Math.ceil((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
-  return (
-    <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800/50 shadow-xl">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-500/10">
-              {isYearly ? <Sparkles className="w-5 h-5 text-indigo-400" /> : <Zap className="w-5 h-5 text-indigo-400" />}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">
-                {isYearly ? "Pro Yearly" : "Pro Monthly"} Plan
-              </h3>
-              <p className="text-sm text-zinc-400">Active Subscription</p>
-            </div>
-          </div>
-          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-            Active
-          </Badge>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-zinc-800/50">
-          <div className="flex items-center gap-2">
-            <CalendarRange className="w-4 h-4 text-zinc-400" />
-            <div>
-              <p className="text-sm text-zinc-400">Expires On</p>
-              <p className="text-sm font-medium text-white">
-                {endDate?.toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-zinc-400" />
-            <div>
-              <p className="text-sm text-zinc-400">Time Remaining</p>
-              <p className="text-sm font-medium text-white">{daysRemaining} days</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-400">Subscription Progress</span>
-            <span className="text-zinc-300">{daysRemaining} days left</span>
-          </div>
-          <Progress 
-            value={Math.max(0, Math.min(100, (daysRemaining / (isYearly ? 365 : 30)) * 100))} 
-            className="h-2 bg-zinc-800"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SuccessMessage = () => (
-  <div className="mb-8 bg-zinc-900/50 border border-emerald-500/20 rounded-2xl p-6">
-    <div className="flex items-center gap-4">
-      <div className="flex-shrink-0 bg-emerald-500/20 p-3 rounded-full">
-        <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-      </div>
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-1">
-          Payment Successful!
-        </h3>
-        <p className="text-zinc-400">
-          Your subscription has been activated. You now have access to all premium features.
-        </p>
-      </div>
-    </div>
-  </div>
-);
 
 export default function UpgradePage() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
@@ -282,7 +203,7 @@ export default function UpgradePage() {
       toast.success(
         <div className="flex flex-col gap-1">
           <p className="font-semibold">Subscription Activated!</p>
-          <p className="text-sm text-zinc-200">You now have full access to all premium features.</p>
+          <p className="text-zinc-200 text-sm">You now have full access to all premium features.</p>
         </div>,
         {
           duration: 5000,
@@ -294,7 +215,7 @@ export default function UpgradePage() {
       toast.error(
         <div className="flex flex-col gap-1">
           <p className="font-semibold">Payment Canceled</p>
-          <p className="text-sm text-zinc-200">Your subscription status remains unchanged.</p>
+          <p className="text-zinc-200 text-sm">Your subscription status remains unchanged.</p>
         </div>,
         {
           duration: 5000,
@@ -309,19 +230,7 @@ export default function UpgradePage() {
   const isProYearly = isSubscribed && subscription?.planType === "PRO_YEARLY";
 
   if (loading) {
-    return (
-      <div className="min-h-[70vh] flex justify-center items-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-indigo-500" />
-            </div>
-          </div>
-          <p className="text-zinc-400 animate-pulse">Loading subscription...</p>
-        </div>
-      </div>
-    );
+    return <Loader />;
   }
 
   // If user has an active subscription, show subscription details
@@ -334,151 +243,121 @@ export default function UpgradePage() {
     const remainingPercentage = Math.floor((daysRemaining / (isYearly ? 365 : 30)) * 100);
 
     return (
-      <div className="min-h-screen py-12 px-4 sm:px-6 bg-zinc-950">
-        <div className="max-w-4xl mx-auto">
+      <div className=" px-6 py-20 min-h-screen">
+        <div className="mx-auto max-w-3xl">
           {/* Success Animation - If just subscribed */}
           {success && (
-            <div className="mb-8 flex justify-center">
+            <div className="mb-16 text-center">
               <div className="relative flex flex-col items-center">
-                <div className="absolute -inset-12 bg-indigo-600/20 rounded-full blur-3xl opacity-70 animate-pulse"></div>
-                <div className="relative flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 mb-6 shadow-xl shadow-indigo-500/20">
+                <div className="relative flex justify-center items-center  shadow-lg mb-8 rounded-full w-24 h-24">
                   <CheckCircle2 className="w-12 h-12 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-2">Payment Successful!</h2>
-                <p className="text-indigo-200 text-lg text-center">
-                  Your subscription is now active
-                </p>
+                <h2 className="mb-3 font-bold text-white text-3xl">Payment Successful</h2>
+                <p className="text-zinc-300 text-lg">Your subscription is now active</p>
               </div>
             </div>
           )}
 
-          {/* Subscription Status Card - Modern Dark UI */}
-          <div className="relative rounded-3xl overflow-hidden group transition-all duration-500 hover:shadow-2xl">
-            {/* Card Background */}
-            <div className="absolute inset-0 bg-zinc-900 border border-zinc-700/50 rounded-3xl"></div>
-            
-            {/* Subtle Glow Accents */}
-            <div className="absolute -top-20 -left-20 w-40 h-40 bg-indigo-600 rounded-full blur-3xl opacity-10 animate-pulse-slow"></div>
-            <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-violet-600 rounded-full blur-3xl opacity-10 animate-pulse-slow"></div>
-            
-            <div className="relative p-8 sm:p-10">
-              {/* Active Status Badge */}
-              <div className="flex justify-center mb-8">
-                <Badge 
-                  className="px-4 py-2.5 bg-zinc-800/90 text-indigo-300 border-zinc-700 rounded-full"
-                  variant="outline"
-                >
+          {/* Subscription Card */}
+          <div className=" shadow-xl border border-zinc-800 rounded-3xl overflow-hidden">
+            <div className="px-8 md:px-12 py-10">
+              {/* Status Badge */}
+              <div className="flex justify-center mb-10">
+                <Badge className="bg-black/50 px-4 py-2 border border-green-950/80 rounded-full text-green-800 hover:bg-green-950/20 transition-colors duration-300">
                   <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                    </span>
-                    Active Subscription
+             
+                    <span className="font-medium text-sm">Active Subscription</span>
                   </div>
                 </Badge>
               </div>
 
               {/* Plan Info */}
-              <div className="space-y-8">
-                <div className="text-center">
-                  <h1 className="text-4xl font-bold tracking-tight text-white">
-                    {isYearly ? "Premium Annual" : "Premium Monthly"} Plan
-                  </h1>
-                  <p className="mt-4 text-zinc-400 font-medium">
-                    Your subscription is active until {endDate?.toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
+              <div className="mb-12 text-center">
+                <h1 className="bg-clip-text bg-gradient-to-r from-blue-600 to-purple-700 font-black text-transparent text-4xl">
+                  {isYearly ? "Pro Annual" : "Pro Monthly"} Plan
+                </h1>
+                <p className="mt-4 text-zinc-300 text-lg">
+                  Active until {endDate?.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    {
-                      label: "Subscription Type",
-                      value: isYearly ? "Annual" : "Monthly",
-                      icon: <Clock className="w-5 h-5 text-indigo-400" />,
-                    },
-                    {
-                      label: "Days Remaining",
-                      value: daysRemaining,
-                      icon: <CalendarRange className="w-5 h-5 text-indigo-400" />,
-                    },
-                    {
-                      label: "Status",
-                      value: "Active",
-                      icon: <Shield className="w-5 h-5 text-indigo-400" />,
-                    }
-                  ].map((stat, i) => (
-                    <div 
-                      key={i}
-                      className="group relative overflow-hidden rounded-xl bg-zinc-800/50 border border-zinc-700/50 p-4 transition-all duration-300 hover:bg-zinc-800/80"
-                    >
-                      <div className="relative flex items-center gap-3">
-                        <div className="p-2.5 rounded-lg bg-zinc-700/50">
-                          {stat.icon}
-                        </div>
-                        <div>
-                          <p className="text-sm text-zinc-400">{stat.label}</p>
-                          <p className="text-xl font-semibold text-white">{stat.value}</p>
-                        </div>
+              {/* Stats Grid */}
+              <div className="gap-5 grid grid-cols-1 md:grid-cols-3 mb-12">
+                {[
+                  {
+                    label: "Plan Type",
+                    value: isYearly ? "Annual" : "Monthly",
+                    icon: <Clock className="w-5 h-5 text-blue-600" />,
+                  },
+                  {
+                    label: "Days Left",
+                    value: daysRemaining,
+                    icon: <CalendarRange className="w-5 h-5 text-blue-600" />,
+                  },
+                  {
+                    label: "Status",
+                    value: "Active",
+                    icon: <Shield className="w-5 h-5 text-blue-600" />,
+                  }
+                ].map((stat, i) => (
+                  <div key={i} className="bg-black/30 hover:shadow-md hover:shadow-indigo-500/10 backdrop-blur-sm p-5 border border-zinc-800/60 hover:border-indigo-500/20 rounded-2xl transition-all duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-gradient-to-br from-indigo-500/20 to-purple-500/20 p-3 rounded-xl">
+                        {stat.icon}
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Progress Bar */}
-                <div className="bg-zinc-800/50 rounded-xl p-6 border border-zinc-700/50">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">Subscription Period</span>
-                      <span className="text-zinc-300 font-medium">{daysRemaining} days left</span>
-                    </div>
-                    <div className="relative h-3 bg-zinc-900 rounded-full overflow-hidden">
-                      <div 
-                        className="absolute inset-y-0 left-0 bg-indigo-500 transition-all duration-500 rounded-full"
-                        style={{ width: `${remainingPercentage}%` }}
-                      >
-                        {/* Add shimmer effect */}
-                        <div className="absolute inset-0 w-full h-full">
-                          <div className="w-1/3 h-full bg-white/20 skew-x-12 animate-shimmer"></div>
-                        </div>
+                      <div>
+                        <p className="font-medium text-zinc-500 text-xs">{stat.label}</p>
+                        <p className="font-semibold text-white text-xl">{stat.value}</p>
                       </div>
-                    </div>
-                    <div className="flex justify-between text-xs text-zinc-500">
-                      <span>Start</span>
-                      <span>End</span>
                     </div>
                   </div>
-                </div>
+                ))}
+              </div>
 
-                {/* Premium Features Display */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    "Unlimited Invoices", 
-                    "Custom Branding", 
-                    "Client Portal", 
-                    "Analytics Dashboard", 
-                    "API Access",
-                    "Priority Support"
-                  ].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
-                      <div className="rounded-full p-1 bg-indigo-500/20 text-indigo-400">
-                        <Check className="w-4 h-4" />
-                      </div>
-                      <span className="text-zinc-300">{feature}</span>
+              {/* Progress Bar */}
+              <div className="bg-black/30 backdrop-blur-sm mb-12 p-6 border border-zinc-800/60 rounded-2xl">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-zinc-200">Subscription Period</span>
+                    <span className="font-medium text-zinc-100">{daysRemaining} days left</span>
+                  </div>
+                  <div className="bg-zinc-800/70 rounded-full h-3 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-blue-600 via-pink-600 to-purple-800 rounded-full h-full transition-all duration-1000"
+                      style={{ width: `${remainingPercentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Features Grid */}
+              <div className="gap-4 grid grid-cols-1 md:grid-cols-2 mb-12">
+                {[
+                  "Unlimited Invoices", 
+                  "Custom Branding", 
+                  "Client Portal", 
+                  "Analytics Dashboard", 
+                  "API Access",
+                  "Priority Support"
+                ].map((feature, i) => (
+                  <div key={i} className="flex items-center gap-3 hover:bg-zinc-800/20 p-3 rounded-xl transition-colors duration-200">
+                    <div className="bg-indigo-500/10 p-1.5 rounded-full text-indigo-400">
+                      <Check className="w-4 h-4" />
                     </div>
-                  ))}
-                </div>
-                
-                {/* Call to Action Button */}
-                <div className="flex justify-center pt-4">
-                  <Button className="bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 px-6 rounded-full">
-                    Manage Subscription
-                  </Button>
-                </div>
+                    <span className="font-medium text-zinc-200 text-sm">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Call to Action Button */}
+              <div className="flex justify-center">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-800 mt-16 rounded-xl font-semibold text-white/70 text-base">
+                  Manage Subscription
+                </Button>
               </div>
             </div>
           </div>
@@ -487,174 +366,207 @@ export default function UpgradePage() {
     );
   }
 
-  // Show plans for non-subscribed users with dark mode UI
+  // Show plans for non-subscribed users
   return (
-    <div className="min-h-screen py-12 container bg-zinc-950">
-      {/* Show success message if payment was successful */}
-      {success && <SuccessMessage />}
-      
-      <div className="mx-auto mb-12 max-w-lg text-center">
-        <div className="inline-block relative mb-4">
-          <Badge variant="outline" className="relative py-1.5 px-4 bg-zinc-800 text-indigo-300 border-zinc-700 shadow-lg">
-            Upgrade Today
-          </Badge>
-        </div>
-        <h1 className="font-bold text-3xl sm:text-4xl mb-3 tracking-tight text-white">
-          Elevate Your Experience
-        </h1>
-        <p className="mt-2 text-zinc-400 max-w-md mx-auto">
-          Choose the perfect plan to unlock premium features and take your workflow to the next level
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-indigo-500" />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="gap-8 grid md:grid-cols-2 mx-auto max-w-5xl">
-          {/* Only show plans that aren't currently subscribed */}
-          {!isProMonthly && !isProYearly && plans.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`relative overflow-hidden group transition-all duration-300 bg-zinc-900 border-zinc-700/50 
-                ${subscription?.status === "ACTIVE" ? "opacity-50 pointer-events-none" : "hover:border-indigo-500/30"}
-                ${plan.highlight ? "ring-1 ring-indigo-500/20 hover:ring-indigo-400/30" : ""}`}
-            >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500 bg-gradient-to-b from-indigo-500/5 to-transparent"></div>
-              
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-2 rounded-lg bg-zinc-800">
-                    <Zap className="w-5 h-5" />
-                  </div>
-                </div>
-                <CardTitle className="text-xl font-bold text-white">
-                  {plan.name}
-                </CardTitle>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className="font-bold text-3xl text-white">
-                    ${plan.price}
-                  </span>
-                  <span className="text-zinc-400">
-                    /{plan.interval}
-                  </span>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="pb-6">
-                <ul className="space-y-3">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-zinc-300">
-                      <div className="rounded-full p-0.5 text-emerald-400 bg-emerald-500/10">
-                        <Check className="w-3.5 h-3.5" />
-                      </div>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              
-              <CardFooter className="pt-2">
-                <Button
-                  className="w-full font-medium rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700"
-                  size="lg"
-                  disabled={processingPlan === plan.id || subscription?.status === "ACTIVE"}
-                  onClick={() => handleUpgrade(plan.id)}
-                >
-                  {subscription?.status === "ACTIVE" ? (
-                    <>
-                      <Check className="mr-2 w-4 h-4" />
-                      Already Subscribed
-                    </>
-                  ) : processingPlan === plan.id ? (
-                    <>
-                      <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="mr-2 w-4 h-4" />
-                      Upgrade Now
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-
-          {/* Show status message if user has any active subscription */}
-          {(isProMonthly || isProYearly) && (
-            <div className="md:col-span-2 p-8 rounded-2xl bg-zinc-900/50 border border-zinc-700/50">
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <div className="bg-indigo-500/20 p-3 rounded-full">
-                  <CheckCircle2 className="w-8 h-8 text-indigo-400" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-2xl font-bold text-white mb-2">
-                    Active Subscription
-                  </h3>
-                  <p className="text-zinc-400">
-                    You&#39;re currently on the {isProMonthly ? "Pro Monthly" : "Pro Yearly"} plan
-                  </p>
-                  {subscription.currentPeriodEnd && (
-                    <p className="text-sm text-zinc-500 mt-2">
-                      Valid until {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  className="bg-zinc-800 hover:bg-zinc-700 text-white mt-4"
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                >
-                  View Subscription Details
-                </Button>
+    <div className="bg-gradient-to-b from-black to-zinc-950 px-6 py-20 min-h-screen">
+      <div className="mx-auto max-w-5xl">
+        {/* Success message */}
+        {success && (
+          <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-indigo-500/5 shadow-lg backdrop-blur-sm mx-auto mb-14 p-6 border border-indigo-500/20 rounded-2xl max-w-lg">
+            <div className="flex items-center gap-5">
+              <div className="bg-gradient-to-br from-indigo-500/20 to-indigo-500/10 p-4 rounded-full">
+                <CheckCircle2 className="w-7 h-7 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="mb-2 font-semibold text-white text-xl">
+                  Payment Successful
+                </h3>
+                <p className="text-zinc-300 text-base">
+                  Your subscription has been activated with full access to premium features.
+                </p>
               </div>
             </div>
-          )}
+          </div>
+        )}
+        
+        {/* Header */}
+        <div className="mx-auto mb-16 max-w-2xl text-center">
+          <Badge variant="outline" className="bg-black/50 mb-6 px-4 py-1.5 border-indigo-500/30 rounded-full font-medium text-indigo-400 text-sm">
+            Upgrade Today
+          </Badge>
+          <h1 className="bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 mb-5 font-bold text-transparent text-5xl leading-tight">
+            Elevate Your Experience
+          </h1>
+          <p className="mx-auto max-w-xl text-zinc-300 text-lg">
+            Choose the perfect plan to unlock premium features and enhance your workflow
+          </p>
+        </div>
 
-          {/* Show "no plans" message if no plans are available */}
-          {!isProMonthly && !isProYearly && plans.length === 0 && (
-            <div className="md:col-span-2 p-8 rounded-2xl bg-zinc-900/50 border border-zinc-700/50 text-center">
-              <p className="text-zinc-400">No subscription plans are currently available.</p>
+        {loading ? (
+          <div className="flex justify-center items-center py-24">
+            <div className="relative">
+              <div className="border-2 border-indigo-500 border-t-transparent rounded-full w-16 h-16 animate-spin"></div>
+              <Zap className="absolute inset-0 m-auto w-6 h-6 text-indigo-500" />
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="gap-8 grid md:grid-cols-2 mx-auto max-w-4xl">
+            {/* Only show plans that aren't currently subscribed */}
+            {!isProMonthly && !isProYearly && plans.map((plan) => {
+              const isYearly = plan.interval === "year";
+              return (
+                <Card
+                  key={plan.id}
+                  className={`bg-gradient-to-b from-zinc-900 to-zinc-950 border-zinc-800 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-500/30 group ${plan.highlight ? "ring-2 ring-indigo-500/20" : ""}`}
+                >                
+                  <CardHeader className="pt-8 pb-5">
+                    <div className="mb-4">
+                      <div className={`inline-flex ${isYearly ? "bg-gradient-to-br from-indigo-500/20 to-purple-500/20" : "bg-black/50"} p-3 rounded-xl group-hover:scale-110 transition-transform duration-300`}>
+                        {plan.icon}
+                      </div>
+                    </div>
+                    {isYearly && (
+                      <Badge className="bg-indigo-500/20 mb-3 px-3 py-1 border-none font-medium text-indigo-300 text-xs">
+                        MOST POPULAR
+                      </Badge>
+                    )}
+                    <CardTitle className="mb-2 font-bold text-white text-2xl">
+                      {plan.name}
+                    </CardTitle>
+                    <p className="text-zinc-400 text-sm">{plan.description}</p>
+                    <div className="flex items-baseline gap-2 mt-5">
+                      <span className="font-bold text-white text-4xl">
+                        ${plan.price}
+                      </span>
+                      <span className="text-zinc-400 text-base">
+                        /{plan.interval}
+                      </span>
+                    </div>
+                    {isYearly && plan.originalPrice && (
+                      <div className="mt-2 text-zinc-500 text-sm">
+                        <span className="line-through">${plan.originalPrice}</span>
+                        <span className="ml-2 font-medium text-indigo-400">Save {calculateAnnualPrice(19.99).savingsPercentage}%</span>
+                      </div>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="pb-8">
+                    <ul className="space-y-4">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-3 transition-transform group-hover:translate-x-1 duration-200">
+                          <div className="bg-gradient-to-br from-indigo-500/20 to-indigo-500/5 p-1.5 rounded-full">
+                            <Check className="w-4 h-4 text-indigo-400" />
+                          </div>
+                          <span className="text-zinc-200 text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  
+                  <CardFooter className="pt-2 pb-8">
+                    <Button
+                      className={`${isYearly ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/20" : "bg-black hover:bg-zinc-800 border border-zinc-700"} rounded-xl w-full font-medium py-6 text-base group-hover:scale-105 transition-transform duration-300`}
+                      size="lg"
+                      disabled={processingPlan === plan.id || subscription?.status === "ACTIVE"}
+                      onClick={() => handleUpgrade(plan.id)}
+                    >
+                      {subscription?.status === "ACTIVE" ? (
+                        <>
+                          <Check className="mr-2 w-5 h-5" />
+                          Already Subscribed
+                        </>
+                      ) : processingPlan === plan.id ? (
+                        <>
+                          <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="mr-2 w-5 h-5" />
+                          {isYearly ? "Upgrade to Annual" : "Upgrade to Monthly"}
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
 
-      {/* Only show security badge if plans are displayed */}
-      {!isProMonthly && !isProYearly && plans.length > 0 && (
-        <div className="mt-12 px-6 py-5 rounded-xl bg-zinc-900 border border-zinc-700 mx-auto max-w-lg text-center shadow-lg">
-          <Shield className="w-5 h-5 text-indigo-400 mx-auto mb-2" />
-          <p className="text-zinc-300 text-sm">
-            All plans include a 14-day money-back guarantee. No questions asked.
-          </p>
-          <p className="mt-2 text-zinc-500 text-xs">
-            Need help choosing? Our support team is available 24/7 for assistance.
-          </p>
-        </div>
-      )}
+            {/* Show status message if user has any active subscription */}
+            {(isProMonthly || isProYearly) && (
+              <div className="md:col-span-2 bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-indigo-500/5 shadow-lg p-8 border border-indigo-500/20 rounded-2xl">
+                <div className="flex flex-col justify-center items-center space-y-6">
+                  <div className="bg-gradient-to-br from-indigo-500/20 to-purple-500/20 p-4 rounded-full">
+                    <CheckCircle2 className="w-8 h-8 text-indigo-400" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="mb-3 font-bold text-white text-2xl">
+                      Active Subscription
+                    </h3>
+                    <p className="text-zinc-300 text-lg">
+                      You&apos;re currently on the {isProMonthly ? "Pro Monthly" : "Pro Yearly"} plan
+                    </p>
+                    {subscription.currentPeriodEnd && (
+                      <p className="mt-3 text-zinc-500 text-base">
+                        Valid until {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    className="bg-gradient-to-r from-indigo-600 hover:from-indigo-700 to-purple-600 hover:to-purple-700 shadow-indigo-500/20 shadow-lg px-6 py-6 border-none rounded-xl font-medium text-white text-base"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  >
+                    View Details
+                  </Button>
+                </div>
+              </div>
+            )}
 
-      {checkoutOpen && clientSecret && (
-        <StripeCheckout 
-          clientSecret={clientSecret}
-          onSuccess={() => {
-            setCheckoutOpen(false);
-            setSuccess(true);
-            window.location.reload(); // Reload to update subscription status
-          }}
-          onCancel={() => {
-            setCheckoutOpen(false);
-            setCanceled(true);
-          }}
-        />
-      )}
+            {/* No plans available message */}
+            {!isProMonthly && !isProYearly && plans.length === 0 && (
+              <div className="md:col-span-2 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8 border border-zinc-800 rounded-2xl text-center">
+                <p className="text-zinc-300 text-lg">No subscription plans are currently available.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Security badge */}
+        {!isProMonthly && !isProYearly && plans.length > 0 && (
+          <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 backdrop-blur-sm mx-auto mt-14 p-6 border border-zinc-800 rounded-xl max-w-md text-center">
+            <div className="flex flex-col items-center">
+              <div className="bg-gradient-to-br from-indigo-500/20 to-indigo-500/10 mb-4 p-3 rounded-full">
+                <Shield className="w-6 h-6 text-indigo-400" />
+              </div>
+              <p className="font-medium text-zinc-200 text-base">
+                All plans include a 14-day money-back guarantee
+              </p>
+              <p className="mt-3 text-zinc-400 text-sm">
+                24/7 support available for assistance
+              </p>
+            </div>
+          </div>
+        )}
+
+        {checkoutOpen && clientSecret && (
+          <StripeCheckout 
+            clientSecret={clientSecret}
+            onSuccess={() => {
+              setCheckoutOpen(false);
+              setSuccess(true);
+              window.location.reload();
+            }}
+            onCancel={() => {
+              setCheckoutOpen(false);
+              setCanceled(true);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -1,380 +1,302 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { requireUser } from "@/app/utils/hooks";
-import prisma from "@/app/utils/db";
-import { formatCurrency } from "@/app/utils/formatCurrency";
-import { cn } from "@/lib/utils";
+"use client";
 import { RevenueDashboard } from "@/app/components/RevenueDashboard";
-import { CurrencyType } from "@/app/types/currency";
+import { CurrencyType } from "@/app/types/currencies";
+import { useEffect, useState } from "react";
+import { format, subDays, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
+import { getInvoices, Invoice } from "@/app/actions/invoices";
+import { motion, AnimatePresence } from "framer-motion";
+import Loader from "@/components/Loader";
 
-async function getRevenueData(userId: string) {
-  // Get time periods with more precision
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  
-  // Get daily data for the last 30 days
-  const dailyData = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    return {
-      date: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-      dayName: date.toLocaleDateString('default', { weekday: 'short' }),
-      fullDate: date.toLocaleDateString('default', { month: 'short', day: 'numeric' })
-    };
-  }).reverse();
 
-  // Get the first day of each month for the last 12 months for better trend analysis
-  const monthsData = Array.from({ length: 12 }, (_, i) => {
-    const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    return {
-      month: month.toLocaleString('default', { month: 'short' }),
-      year: month.getFullYear(),
-      firstDay: new Date(month.getFullYear(), month.getMonth(), 1),
-      lastDay: new Date(month.getFullYear(), month.getMonth() + 1, 0),
-    };
-  });
-
-  // Fetch all invoices with detailed payment info
-  const invoices = await prisma.invoice.findMany({
-    where: {
-      userId,
-      createdAt: {
-        gte: monthsData[monthsData.length - 1].firstDay // Last 12 months
-      }
-    },
-    select: {
-      id: true,
-      total: true,
-      status: true,
-      createdAt: true,
-      paidAt: true,
-      currency: true,
-      paymentMethod: true,
-      clientName: true,
-      invoiceNumber: true,
-      paymentDetails: {
-        select: {
-          amount: true,
-          paymentStatus: true,
-          paymentMethod: true,
-          createdAt: true
-        }
-      }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
-
-  // Calculate daily revenue for the last 30 days
-  const dailyRevenue = dailyData.map(({ date, dayName, fullDate }) => {
-    const dayInvoices = invoices.filter(
-      invoice => {
-        const invoiceDate = new Date(invoice.createdAt);
-        return invoiceDate.getFullYear() === date.getFullYear() &&
-               invoiceDate.getMonth() === date.getMonth() &&
-               invoiceDate.getDate() === date.getDate();
-      }
-    );
-    
-    const totalAmount = dayInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
-    const paidAmount = dayInvoices
-      .filter(invoice => invoice.status === "PAID")
-      .reduce((sum, invoice) => sum + invoice.total, 0);
-    
-    return {
-      name: dayName,
-      fullDate,
-      total: totalAmount,
-      paid: paidAmount,
-    };
-  });
-
-  // Calculate monthly revenue with year-over-year growth
-  const monthlyRevenue = monthsData.map(({ month, year, firstDay, lastDay }) => {
-    const monthInvoices = invoices.filter(
-      invoice => invoice.createdAt >= firstDay && invoice.createdAt <= lastDay
-    );
-    
-    const totalAmount = monthInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
-    const paidAmount = monthInvoices
-      .filter(invoice => invoice.status === "PAID")
-      .reduce((sum, invoice) => sum + invoice.total, 0);
-    
-    return {
-      name: `${month} ${year}`,
-      total: totalAmount,
-      paid: paidAmount,
-    };
-  }).reverse();
-
-  // Calculate payment method breakdown with growth metrics
-  const paymentMethodsData = [
-    {
-      name: "Stripe",
-      value: invoices
-        .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "STRIPE")
-        .reduce((sum, invoice) => sum + invoice.total, 0),
-      count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "STRIPE").length,
-      recentCount: invoices.filter(invoice => 
-        invoice.status === "PAID" && 
-        invoice.paymentMethod === "STRIPE" &&
-        invoice.paidAt && 
-        invoice.paidAt >= new Date(now.setDate(now.getDate() - 30))
-      ).length
-    },
-    {
-      name: "Manual",
-      value: invoices
-        .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "MANUAL")
-        .reduce((sum, invoice) => sum + invoice.total, 0),
-      count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "MANUAL").length,
-      recentCount: invoices.filter(invoice => 
-        invoice.status === "PAID" && 
-        invoice.paymentMethod === "MANUAL" &&
-        invoice.paidAt && 
-        invoice.paidAt >= new Date(now.setDate(now.getDate() - 30))
-      ).length
-    },
-    {
-      name: "Email",
-      value: invoices
-        .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "EMAIL")
-        .reduce((sum, invoice) => sum + invoice.total, 0),
-      count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "EMAIL").length,
-      recentCount: invoices.filter(invoice => 
-        invoice.status === "PAID" && 
-        invoice.paymentMethod === "EMAIL" &&
-        invoice.paidAt && 
-        invoice.paidAt >= new Date(now.setDate(now.getDate() - 30))
-      ).length
-    }
-  ];
-
-  // Calculate current month metrics with daily averages
-  const currentMonthInvoices = invoices.filter(
-    invoice => invoice.createdAt >= firstDayOfMonth && invoice.createdAt <= lastDayOfMonth
-  );
-  
-  const currentMonthTotal = currentMonthInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const currentMonthPaid = currentMonthInvoices
-    .filter(invoice => invoice.status === "PAID")
-    .reduce((sum, invoice) => sum + invoice.total, 0);
-  
-  const daysSoFar = Math.max(1, now.getDate());
-  const dailyAverage = Math.round(currentMonthTotal / daysSoFar);
-  
-  const paymentRate = currentMonthTotal > 0 
-    ? Math.round((currentMonthPaid / currentMonthTotal) * 100) 
-    : 0;
-
-  // Calculate total metrics with trends
-  const totalRevenue = invoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const totalPaid = invoices
-    .filter(invoice => invoice.status === "PAID")
-    .reduce((sum, invoice) => sum + invoice.total, 0);
-  
-  const totalPaymentRate = totalRevenue > 0 
-    ? Math.round((totalPaid / totalRevenue) * 100) 
-    : 0;
-
-  // Calculate advanced metrics
-  const averageInvoiceValue = invoices.length > 0 
-    ? Math.round(totalRevenue / invoices.length) 
-    : 0;
-
-  const averageTimeToPayment = invoices
-    .filter(invoice => invoice.status === "PAID" && invoice.paidAt)
-    .reduce((sum, invoice) => {
-      const createdDate = new Date(invoice.createdAt);
-      const paidDate = new Date(invoice.paidAt!);
-      return sum + (paidDate.getTime() - createdDate.getTime());
-    }, 0) / (invoices.filter(invoice => invoice.status === "PAID").length || 1);
-
-  const averageDaysToPayment = Math.round(averageTimeToPayment / (1000 * 60 * 60 * 24));
-
-  // Get recent successful payments with more details
-  const recentPayments = invoices
-    .filter(invoice => invoice.status === "PAID" && invoice.paidAt)
-    .sort((a, b) => (b.paidAt?.getTime() || 0) - (a.paidAt?.getTime() || 0))
-    .slice(0, 5)
-    .map(payment => ({
-      ...payment,
-      formattedDate: payment.paidAt?.toLocaleDateString('default', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    }));
-
-  return {
-    dailyRevenue,
-    monthlyRevenue,
-    paymentMethodsData,
-    currentMonthTotal,
-    currentMonthPaid,
-    dailyAverage,
-    paymentRate,
-    totalRevenue,
-    totalPaid,
-    totalPaymentRate,
-    averageInvoiceValue,
-    averageDaysToPayment,
-    recentPayments
-  };
+interface RecentPayment {
+  id: string;
+  total: number;
+  currency?: CurrencyType;
+  paymentMethod?: string;
+  formattedDate: string;
+  status: string;
+  customerName?: string;
 }
 
-export default async function RevenuePage() {
-  const session = await requireUser();
-  const data = await getRevenueData(session.user?.id as string);
+interface RevenueData {
+  dailyRevenue: Array<{
+    name: string;
+    fullDate: string;
+    total: number;
+    paid: number;
+  }>;
+  monthlyRevenue: Array<{
+    name: string;
+    total: number;
+    paid: number;
+  }>;
+  paymentMethodsData: Array<{
+    name: string;
+    value: number;
+    count: number;
+    recentCount: number;
+  }>;
+  currentMonthTotal: number;
+  currentMonthPaid: number;
+  dailyAverage: number;
+  paymentRate: number;
+  totalRevenue: number;
+  totalPaid: number;
+  totalPaymentRate: number;
+  averageInvoiceValue: number;
+  averageDaysToPayment: number;
+  recentPayments: Array<{
+    id: string;
+    total: number;
+    currency?: CurrencyType;
+    paymentMethod?: string;
+    formattedDate: string;
+    status: string;
+    customerName?: string;
+  }>;
+  weeklyGrowth: number;
+  monthlyGrowth: number;
+  successfulPayments: number;
+  failedPayments: number;
+  pendingPayments: number;
+  averageTicketSize: number;
+  topPaymentMethods: Array<{
+    method: string;
+    percentage: number;
+    amount: number;
+  }>;
+}
 
+export default function RevenuePage() {
+  const [data, setData] = useState<RevenueData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showAllPayments, setShowAllPayments] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const invoices = await getInvoices();
+        
+        // Calculate daily revenue for the last 30 days
+        const dailyRevenue = Array.from({ length: 30 }, (_, i) => {
+          const date = subDays(new Date(), i);
+          const dayInvoices = invoices.filter((invoice: Invoice) => {
+            const invoiceDate = new Date(invoice.createdAt);
+            return format(invoiceDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+          });
+          
+          return {
+            name: format(date, 'MMM d'),
+            fullDate: format(date, 'MMMM d, yyyy'),
+            total: dayInvoices.reduce((sum: number, inv: Invoice) => sum + inv.total, 0),
+            paid: dayInvoices.filter((inv: Invoice) => inv.status === 'paid').reduce((sum: number, inv: Invoice) => sum + inv.total, 0)
+          };
+        }).reverse();
+
+        // Calculate monthly revenue for the last 12 months
+        const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
+          const date = new Date();
+          date.setMonth(date.getMonth() - i);
+          const start = startOfMonth(date);
+          const end = endOfMonth(date);
+          
+          const monthInvoices = invoices.filter((invoice: Invoice) => {
+            const invoiceDate = new Date(invoice.createdAt);
+            return invoiceDate >= start && invoiceDate <= end;
+          });
+
+          return {
+            name: format(date, 'MMM yyyy'),
+            total: monthInvoices.reduce((sum: number, inv: Invoice) => sum + inv.total, 0),
+            paid: monthInvoices.filter((inv: Invoice) => inv.status === 'paid').reduce((sum: number, inv: Invoice) => sum + inv.total, 0)
+          };
+        }).reverse();
+
+        // Calculate payment methods breakdown
+        const paymentMethods = invoices.reduce((acc: Record<string, { total: number; count: number; recentCount: number }>, invoice: Invoice) => {
+          const method = invoice.paymentMethod || 'Manual';
+          if (!acc[method]) {
+            acc[method] = { total: 0, count: 0, recentCount: 0 };
+          }
+          acc[method].total += invoice.status === 'paid' ? invoice.total : 0;
+          acc[method].count += invoice.status === 'paid' ? 1 : 0;
+          
+          // Count payments in the last 7 days
+          const isRecent = differenceInDays(new Date(), new Date(invoice.createdAt)) <= 7;
+          if (isRecent && invoice.status === 'paid') {
+            acc[method].recentCount += 1;
+          }
+          
+          return acc;
+        }, {});
+
+        const paymentMethodsData = Object.entries(paymentMethods).map(([name, methodData]) => ({
+          name,
+          value: methodData.total,
+          count: methodData.count,
+          recentCount: methodData.recentCount
+        }));
+
+        // Calculate current month metrics
+        const now = new Date();
+        const currentMonthStart = startOfMonth(now);
+        const currentMonthInvoices = invoices.filter((invoice: Invoice) => {
+          const invoiceDate = new Date(invoice.createdAt);
+          return invoiceDate >= currentMonthStart;
+        });
+
+        const currentMonthTotal = currentMonthInvoices.reduce((sum: number, inv: Invoice) => sum + inv.total, 0);
+        const currentMonthPaid = currentMonthInvoices
+          .filter((inv: Invoice) => inv.status === 'paid')
+          .reduce((sum: number, inv: Invoice) => sum + inv.total, 0);
+
+        // Calculate weekly and monthly growth
+        const lastMonth = monthlyRevenue[monthlyRevenue.length - 2];
+        const currentMonth = monthlyRevenue[monthlyRevenue.length - 1];
+        const monthlyGrowth = lastMonth.paid > 0 
+          ? Math.round(((currentMonth.paid - lastMonth.paid) / lastMonth.paid) * 100)
+          : 0;
+
+        const lastWeekRevenue = dailyRevenue.slice(-14, -7).reduce((sum, day) => sum + day.paid, 0);
+        const thisWeekRevenue = dailyRevenue.slice(-7).reduce((sum, day) => sum + day.paid, 0);
+        const weeklyGrowth = lastWeekRevenue > 0
+          ? Math.round(((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100)
+          : 0;
+
+        // Calculate payment counts
+        const successfulPayments = invoices.filter(inv => inv.status === 'paid').length;
+        const failedPayments = invoices.filter(inv => inv.status === 'failed').length;
+        const pendingPayments = invoices.filter(inv => inv.status === 'pending').length;
+
+        // Calculate daily average for current month
+        const daysInMonth = differenceInDays(now, currentMonthStart) + 1;
+        const dailyAverage = currentMonthPaid / daysInMonth;
+
+        // Calculate total metrics
+        const totalRevenue = invoices.reduce((sum: number, inv: Invoice) => sum + inv.total, 0);
+        const totalPaid = invoices
+          .filter((inv: Invoice) => inv.status === 'paid')
+          .reduce((sum: number, inv: Invoice) => sum + inv.total, 0);
+
+        const totalPaymentRate = Math.round((totalPaid / totalRevenue) * 100);
+        const paymentRate = currentMonthTotal > 0 
+          ? Math.round((currentMonthPaid / currentMonthTotal) * 100)
+          : 0;
+
+        // Calculate average ticket size
+        const averageTicketSize = totalPaid / successfulPayments || 0;
+
+        // Calculate average invoice value
+        const averageInvoiceValue = totalRevenue / invoices.length;
+
+        // Calculate average days to payment
+        const paidInvoices = invoices.filter((inv: Invoice) => inv.status === 'paid');
+        const totalDaysToPayment = paidInvoices.reduce((sum: number, inv: Invoice) => {
+          const createdDate = new Date(inv.createdAt);
+          const paidDate = new Date(inv.paidAt || inv.createdAt);
+          return sum + differenceInDays(paidDate, createdDate);
+        }, 0);
+        const averageDaysToPayment = Math.round(totalDaysToPayment / paidInvoices.length) || 0;
+
+        // Calculate top payment methods
+        const topPaymentMethods = Object.entries(paymentMethods)
+          .map(([method, data]) => ({
+            method,
+            amount: data.total,
+            percentage: Math.round((data.total / totalPaid) * 100)
+          }))
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 3);
+
+        // Get recent payments
+        const recentPayments = paidInvoices
+          .sort((a, b) => new Date(b.paidAt || b.createdAt).getTime() - new Date(a.paidAt || a.createdAt).getTime())
+          .slice(0, 5)
+          .map(payment => ({
+            id: payment.id,
+            total: payment.total,
+            currency: payment.currency && Object.values(CurrencyType).includes(payment.currency as CurrencyType) 
+              ? payment.currency as CurrencyType 
+              : undefined,
+            paymentMethod: payment.paymentMethod,
+            formattedDate: format(new Date(payment.paidAt || payment.createdAt), 'MMM d, h:mm a'),
+            status: payment.status,
+            customerName: `Customer ${payment.id.slice(0, 4)}`
+          }));
+
+        setData({
+          dailyRevenue,
+          monthlyRevenue,
+          paymentMethodsData,
+          currentMonthTotal,
+          currentMonthPaid,
+          dailyAverage,
+          paymentRate,
+          totalRevenue,
+          totalPaid,
+          totalPaymentRate,
+          averageInvoiceValue,
+          averageDaysToPayment,
+          recentPayments,
+          weeklyGrowth,
+          monthlyGrowth,
+          successfulPayments,
+          failedPayments,
+          pendingPayments,
+          averageTicketSize,
+          topPaymentMethods
+        });
+      } catch (err) {
+        console.error('Error fetching revenue data:', err);
+        setError('Failed to load revenue data. Please try again later.');
+      }
+    }
+
+    fetchData();
+  }, []);
+
+ 
+
+  if (!data) {
+
+      return <Loader />;
+    }
   return (
-    <div className="space-y-8 bg-[#030303] p-6 min-h-screen">
-      <div>
-        <h1 className="mb-2 font-bold text-white/90 text-3xl tracking-tight">Revenue Dashboard</h1>
-        <p className="text-zinc-400">
-          Track your revenue and payment analytics
-        </p>
-      </div>
-
-      <div className="gap-4 grid md:grid-cols-2 lg:grid-cols-4">
-        <Card className={cn(
-          "relative overflow-hidden",
-          "bg-black/40 hover:bg-black/60",
-          "border-zinc-800/30",
-          "backdrop-blur-xl transition-all duration-300",
-          "hover:translate-y-[-2px]",
-          "group"
-        )}>
-          {/* Add subtle gradient hover effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-          <CardHeader className="pb-2">
-            <CardTitle className="font-medium text-neutral-400 text-sm">
-              Total Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">
-              {formatCurrency({ amount: data.totalRevenue, currency: "USD" })}
-            </div>
-            <p className="mt-1 text-neutral-500 text-xs">
-              {data.totalPaymentRate}% payment rate
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={cn(
-          "relative overflow-hidden",
-          "bg-black/40 hover:bg-black/60",
-          "border-zinc-800/30",
-          "backdrop-blur-xl transition-all duration-300",
-          "hover:translate-y-[-2px]",
-          "group"
-        )}>
-          {/* Add subtle gradient hover effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-          <CardHeader className="pb-2">
-            <CardTitle className="font-medium text-neutral-400 text-sm">
-              Total Collected
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">
-              {formatCurrency({ amount: data.totalPaid, currency: "USD" })}
-            </div>
-            <p className="mt-1 text-neutral-500 text-xs">
-              {formatCurrency({ amount: data.totalRevenue - data.totalPaid, currency: "USD" })} outstanding
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={cn(
-          "relative overflow-hidden",
-          "bg-black/40 hover:bg-black/60",
-          "border-zinc-800/30",
-          "backdrop-blur-xl transition-all duration-300",
-          "hover:translate-y-[-2px]",
-          "group"
-        )}>
-          {/* Add subtle gradient hover effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-          <CardHeader className="pb-2">
-            <CardTitle className="font-medium text-neutral-400 text-sm">
-              This Month
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">
-              {formatCurrency({ amount: data.currentMonthTotal, currency: "USD" })}
-            </div>
-            <p className="mt-1 text-neutral-500 text-xs">
-              {data.paymentRate}% payment rate
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={cn(
-          "relative overflow-hidden",
-          "bg-black/40 hover:bg-black/60",
-          "border-zinc-800/30",
-          "backdrop-blur-xl transition-all duration-300",
-          "hover:translate-y-[-2px]",
-          "group"
-        )}>
-          {/* Add subtle gradient hover effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-          <CardHeader className="pb-2">
-            <CardTitle className="font-medium text-neutral-400 text-sm">
-              Average Invoice
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="font-bold text-2xl">
-              {formatCurrency({ amount: data.averageInvoiceValue, currency: "USD" })}
-            </div>
-            <p className="mt-1 text-neutral-500 text-xs">
-              Per invoice value
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <RevenueDashboard data={data} />
-
-      <Card className={cn(
-        "relative overflow-hidden",
-        "bg-black/40",
-        "border-zinc-800/30",
-        "backdrop-blur-xl"
-      )}>
-        <CardHeader>
-          <CardTitle className="text-neutral-400 text-sm">Recent Payments</CardTitle>
-          <CardDescription>
-            Your latest successful payments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {data.recentPayments.map((payment) => (
-              <div key={payment.id} className="flex justify-between items-center bg-black/20 p-4 rounded-lg">
-                <div>
-                  <p className="font-medium">Payment #{payment.id.slice(0, 8)}</p>
-                  <p className="text-neutral-500 text-sm">
-                    {payment.formattedDate}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium text-emerald-500">
-                    {formatCurrency({ amount: payment.total, currency: (payment.currency as CurrencyType) || "USD" })}
-                  </p>
-                  <p className="text-neutral-500 text-sm">
-                    via {payment.paymentMethod}
-                  </p>
-                </div>
-              </div>
-            ))}
+    <div className="relative bg-black min-h-screen">
+      {/* Deep blue-black gradient background */}
+    
+      {/* Main content container */}
+      <div className="relative mx-auto px-4 py-12 container z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12"
+        >
+          <div className="flex items-end gap-4 mb-2">
+            <h1 className="font-black text-white text-5xl">
+              <span className="bg-clip-text bg-gradient-to-r from-blue-600 via-violet-600 to-purple-600 text-transparent">Revenue</span> Dashboard
+            </h1>
+          
           </div>
-        </CardContent>
-      </Card>
+          <p className="max-w-2xl text-zinc-400 text-sm tracking-wide">
+            Track your financial performance with real-time insights and analytics. Monitor revenue trends, payment success rates, and key business metrics all in one place.
+          </p>
+        </motion.div>
+
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <RevenueDashboard 
+              data={data} 
+              showAllPayments={showAllPayments}
+              onViewAllClick={() => setShowAllPayments(!showAllPayments)}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

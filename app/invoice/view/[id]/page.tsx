@@ -8,7 +8,8 @@ import { CheckCircle2, Clock, Calendar, User, Mail, MapPin, Briefcase } from "lu
 import { createStripeCheckoutSession } from "@/app/actions/stripe";
 import type { CurrencyType } from "@/app/types/currency";
 
-export default async function InvoicePage({ params }: { params: { id: string } }) {
+
+export default async function InvoicePage({ params }: { params: { id: string }; searchParams: { [key: string]: string | string[] | undefined } }) {
   const invoice = await prisma.invoice.findUnique({
     where: { id: params.id },
     include: {
@@ -203,7 +204,12 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           <CardFooter className="pt-4 pb-12 px-8 relative z-10">
             <div className="w-full">
               {!isPaid && hasStripe && (
-                <form action={createStripeCheckoutSession.bind(null, invoice.id)}>
+                <form action={async (formData: FormData) => {
+                  const result = await createStripeCheckoutSession(invoice.id);
+                  if (result.url) {
+                    window.location.href = result.url;
+                  }
+                }}>
                   <Button 
                     type="submit" 
                     className="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white rounded-xl py-7 text-base font-medium transition-all duration-200 shadow-lg shadow-violet-900/20"

@@ -5,7 +5,7 @@
 @layer base {
   :root {
     /* Light mode variables - only used when explicitly toggled */
-    --background: 225 30% 96%;
+    --background: 0 0% 0%;
     --foreground: 235 40% 15%;
     --card: 0 0% 100%;
     --card-foreground: 235 40% 15%;
@@ -244,6 +244,18 @@ img, image {
   -webkit-text-fill-color: transparent;
 }
 
+@keyframes gradient-xy {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 @layer utilities {
   .animate-fade-in-up {
     animation: fade-in-up 0.7s cubic-bezier(0.2, 0.0, 0.2, 1.0) forwards;
@@ -258,5 +270,10 @@ img, image {
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .animate-gradient-xy {
+    animation: gradient-xy 15s ease infinite;
+    background-size: 400% 400%;
   }
 }
