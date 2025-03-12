@@ -20,11 +20,13 @@ export async function saveStripeKeys(apiKey: string, secretKey: string) {
       update: {
         stripeApiKey: apiKey,
         stripeSecretKey: secretKey,
+        isConnected: true,
       },
       create: {
         userId,
         stripeApiKey: apiKey,
         stripeSecretKey: secretKey,
+        isConnected: true,
       },
     });
 

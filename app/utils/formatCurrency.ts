@@ -1,10 +1,12 @@
-import { CurrencyType, FormattedCurrency } from "./types";
+import type { CurrencyType, FormattedCurrency } from "../types/currency";
 
-export function formatCurrency({ amount, currency }: FormattedCurrency): string {
+export function formatCurrency({ 
+  amount, 
+  currency = "USD" 
+}: Partial<FormattedCurrency> & { amount: number }): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency,
+    currency: currency as CurrencyType,
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   }).format(amount);
 }

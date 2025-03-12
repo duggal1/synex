@@ -35,6 +35,7 @@ async function getRevenueData(userId: string) {
       createdAt: true,
       paidAt: true,
       currency: true,
+      paymentMethod: true,
     },
   });
 
@@ -59,11 +60,25 @@ async function getRevenueData(userId: string) {
   // Calculate payment method breakdown
   const paymentMethodsData = [
     {
-      name: "MANUAL",
+      name: "Stripe",
       value: invoices
-        .filter(invoice => invoice.status === "PAID")
+        .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "STRIPE")
         .reduce((sum, invoice) => sum + invoice.total, 0),
-      count: invoices.filter(invoice => invoice.status === "PAID").length,
+      count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "STRIPE").length,
+    },
+    {
+      name: "Manual",
+      value: invoices
+        .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "MANUAL")
+        .reduce((sum, invoice) => sum + invoice.total, 0),
+      count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "MANUAL").length,
+    },
+    {
+      name: "Email",
+      value: invoices
+        .filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "EMAIL")
+        .reduce((sum, invoice) => sum + invoice.total, 0),
+      count: invoices.filter(invoice => invoice.status === "PAID" && invoice.paymentMethod === "EMAIL").length,
     }
   ];
 
@@ -114,10 +129,10 @@ export default async function RevenuePage() {
   const data = await getRevenueData(session.user?.id as string);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6 bg-[#030303] min-h-screen">
       <div>
-        <h1 className="font-bold text-2xl tracking-tight">Revenue Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="font-bold text-3xl tracking-tight text-white/90 mb-2">Revenue Dashboard</h1>
+        <p className="text-zinc-400">
           Track your revenue and payment analytics
         </p>
       </div>
@@ -126,10 +141,13 @@ export default async function RevenuePage() {
         <Card className={cn(
           "relative overflow-hidden",
           "bg-black/40 hover:bg-black/60",
-          "border-neutral-800/50",
-          "backdrop-blur-sm transition-all duration-300",
+          "border-zinc-800/30",
+          "backdrop-blur-xl transition-all duration-300",
           "hover:translate-y-[-2px]",
+          "group"
         )}>
+          {/* Add subtle gradient hover effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <CardHeader className="pb-2">
             <CardTitle className="font-medium text-neutral-400 text-sm">
               Total Revenue
@@ -147,10 +165,13 @@ export default async function RevenuePage() {
         <Card className={cn(
           "relative overflow-hidden",
           "bg-black/40 hover:bg-black/60",
-          "border-neutral-800/50",
-          "backdrop-blur-sm transition-all duration-300",
+          "border-zinc-800/30",
+          "backdrop-blur-xl transition-all duration-300",
           "hover:translate-y-[-2px]",
+          "group"
         )}>
+          {/* Add subtle gradient hover effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <CardHeader className="pb-2">
             <CardTitle className="font-medium text-neutral-400 text-sm">
               Total Collected
@@ -168,10 +189,13 @@ export default async function RevenuePage() {
         <Card className={cn(
           "relative overflow-hidden",
           "bg-black/40 hover:bg-black/60",
-          "border-neutral-800/50",
-          "backdrop-blur-sm transition-all duration-300",
+          "border-zinc-800/30",
+          "backdrop-blur-xl transition-all duration-300",
           "hover:translate-y-[-2px]",
+          "group"
         )}>
+          {/* Add subtle gradient hover effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <CardHeader className="pb-2">
             <CardTitle className="font-medium text-neutral-400 text-sm">
               This Month
@@ -189,10 +213,13 @@ export default async function RevenuePage() {
         <Card className={cn(
           "relative overflow-hidden",
           "bg-black/40 hover:bg-black/60",
-          "border-neutral-800/50",
-          "backdrop-blur-sm transition-all duration-300",
+          "border-zinc-800/30",
+          "backdrop-blur-xl transition-all duration-300",
           "hover:translate-y-[-2px]",
+          "group"
         )}>
+          {/* Add subtle gradient hover effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-blue-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
           <CardHeader className="pb-2">
             <CardTitle className="font-medium text-neutral-400 text-sm">
               Average Invoice
@@ -212,4 +239,4 @@ export default async function RevenuePage() {
       <RevenueDashboard data={data} />
     </div>
   );
-} 
+}

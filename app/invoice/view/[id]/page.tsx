@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, Clock, Calendar, User, Mail, MapPin, Briefcase } from "lucide-react";
 import { createStripeCheckoutSession } from "@/app/actions/stripe";
+import type { CurrencyType } from "@/app/types/currency";
 
 export default async function InvoicePage({ params }: { params: { id: string } }) {
   const invoice = await prisma.invoice.findUnique({
@@ -41,14 +42,21 @@ export default async function InvoicePage({ params }: { params: { id: string } }
   // Check if the user has Stripe connected
   const hasStripe = invoice.User?.stripeSettings?.isConnected;
 
+  // Handle nullable fields with default values
+  const currency = (invoice.currency || "USD") as CurrencyType;
+  const invoiceNote = invoice.note || "";
+  const fromName = invoice.fromName || "Sender";
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black p-4 md:p-8">
+    <div className="flex items-center justify-center min-h-screen bg-[#030303] p-4 md:p-8">
       <div className="w-full max-w-4xl">
-        <Card className="bg-zinc-950 border-0 shadow-2xl rounded-2xl overflow-hidden relative">
-          {/* Gradient top border */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-600 via-blue-500 to-emerald-400"></div>
+        <Card className="bg-black border border-zinc-800/30 shadow-2xl rounded-2xl overflow-hidden relative backdrop-blur-xl">
+          {/* Gradient effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-blue-500/5"></div>
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent"></div>
           
-          <CardHeader className="pb-6 pt-12 px-8">
+          {/* Header */}
+          <CardHeader className="pb-6 pt-12 px-8 relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <CardTitle className="font-bold text-3xl text-white tracking-tight">
@@ -79,14 +87,15 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             </div>
           </CardHeader>
           
-          <CardContent className="space-y-8 px-8">
+          {/* Content */}
+          <CardContent className="space-y-8 px-8 relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3 p-6 rounded-xl bg-zinc-900/30 backdrop-blur-sm border border-zinc-800/50 shadow-lg">
                 <div className="flex items-center gap-2 text-zinc-400 text-sm mb-2">
                   <User className="w-4 h-4 text-blue-400" />
                   <h3 className="font-medium uppercase tracking-wider text-xs">From</h3>
                 </div>
-                <p className="text-white font-medium text-lg">{invoice.fromName}</p>
+                <p className="text-white font-medium text-lg">{fromName}</p>
                 <div className="flex items-center gap-2 text-zinc-400 text-sm">
                   <Mail className="w-4 h-4 text-blue-400" />
                   <p>{invoice.fromEmail}</p>
@@ -132,7 +141,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
               </div>
             </div>
 
-            <div className="mt-8 rounded-xl bg-zinc-900/30 backdrop-blur-sm border border-zinc-800/50 shadow-lg p-6">
+            <div className="mt-8 rounded-2xl bg-zinc-900/30 backdrop-blur-xl border border-zinc-800/30 shadow-2xl p-6">
               <div className="gap-4 grid grid-cols-12 mb-4 uppercase tracking-wider font-medium text-zinc-500 text-xs pb-3 border-b border-zinc-800/70">
                 <div className="col-span-6">Description</div>
                 <div className="col-span-2 text-right">Quantity</div>
@@ -146,13 +155,13 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                 <div className="col-span-2 text-right text-white">
                   {formatCurrency({
                     amount: invoice.invoiceItemRate,
-                    currency: invoice.currency as "USD" | "EUR",
+                    currency: currency,
                   })}
                 </div>
                 <div className="col-span-2 text-right text-white font-medium">
                   {formatCurrency({
                     amount: invoice.invoiceItemQuantity * invoice.invoiceItemRate,
-                    currency: invoice.currency as "USD" | "EUR",
+                    currency: currency,
                   })}
                 </div>
               </div>
@@ -164,7 +173,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                     <span className="text-white">
                       {formatCurrency({
                         amount: invoice.total,
-                        currency: invoice.currency as "USD" | "EUR",
+                        currency: currency,
                       })}
                     </span>
                   </div>
@@ -174,7 +183,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                     <span className="text-white text-xl bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
                       {formatCurrency({
                         amount: invoice.total,
-                        currency: invoice.currency as "USD" | "EUR",
+                        currency: currency,
                       })}
                     </span>
                   </div>
@@ -185,18 +194,19 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             {invoice.note && (
               <div className="p-6 rounded-xl bg-zinc-900/30 backdrop-blur-sm border border-zinc-800/50 shadow-lg">
                 <h3 className="flex items-center gap-2 text-zinc-400 text-xs mb-4 font-medium uppercase tracking-wider">Notes</h3>
-                <p className="text-zinc-300 text-sm whitespace-pre-line leading-relaxed">{invoice.note}</p>
+                <p className="text-zinc-300 text-sm whitespace-pre-line leading-relaxed">{invoiceNote}</p>
               </div>
             )}
           </CardContent>
           
-          <CardFooter className="pt-4 pb-12 px-8">
+          {/* Footer */}
+          <CardFooter className="pt-4 pb-12 px-8 relative z-10">
             <div className="w-full">
               {!isPaid && hasStripe && (
                 <form action={createStripeCheckoutSession.bind(null, invoice.id)}>
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white rounded-xl py-7 text-base font-medium transition-all duration-200 shadow-lg shadow-blue-900/20"
+                    className="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white rounded-xl py-7 text-base font-medium transition-all duration-200 shadow-lg shadow-violet-900/20"
                   >
                     Pay Now
                   </Button>
@@ -209,7 +219,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
               )}
               {!isPaid && !hasStripe && (
                 <div className="font-medium text-amber-400 text-center p-5 rounded-xl bg-zinc-900/30 backdrop-blur-sm border border-amber-900/50 shadow-lg">
-                  Please contact {invoice.fromName} to arrange payment.
+                  Please contact {fromName} to arrange payment.
                 </div>
               )}
             </div>

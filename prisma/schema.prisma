@@ -99,7 +99,7 @@ model Invoice {
   clientName    String
   clientEmail   String
   clientAddress String
-  currency      String
+  currency      CurrencyType @default(USD)
   invoiceNumber Int
   note          String?
 
@@ -113,11 +113,30 @@ model Invoice {
   stripeCheckoutSessionId String?
   paymentMethod          PaymentMethod? @default(EMAIL)
   paymentLink            String?
+  paymentDetails         PaymentDetails?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   User      User?    @relation(fields: [userId], references: [id])
   userId    String?
+}
+
+model PaymentDetails {
+  id              String   @id @default(cuid())
+  invoiceId       String   @unique
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id])
+  amount          Int
+  currency        CurrencyType
+  paymentIntentId String
+  customerEmail   String
+  paymentStatus   String
+  paymentMethod   String
+  receiptEmail    String?
+  receiptUrl      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([invoiceId])
 }
 
 enum InvoiceStatus {
@@ -130,6 +149,15 @@ enum PaymentMethod {
   EMAIL
   STRIPE
   MANUAL
+}
+
+enum CurrencyType {
+  USD
+  EUR
+  GBP
+  CAD
+  AUD
+  INR
 }
 
 model StripeSettings {

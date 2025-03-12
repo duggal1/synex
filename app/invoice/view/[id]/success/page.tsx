@@ -38,7 +38,7 @@ export default async function PaymentSuccessPage({
         status: "PAID",
         paidAt: new Date(),
         stripeCheckoutSessionId: session_id,
-        paymentMethod: "STRIPE",
+        paymentMethod: "STRIPE", // Track payment method
       },
     });
   }
@@ -100,4 +100,4 @@ export default async function PaymentSuccessPage({
       </div>
     </div>
   );
-} 
+}

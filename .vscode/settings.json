@@ -1,4 +1,5 @@
 {
     "WillLuke.nextjs.hasPrompted": true,
-    "DockerRun.DisableAutoGenerateConfig": true
+    "DockerRun.DisableAutoGenerateConfig": true,
+    "git.ignoreLimitWarning": true
 }
