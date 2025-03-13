@@ -69,7 +69,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
     },
     description = "Sed ut perspiciatis unde omnis iste natus voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae.",
     ctaText = "Browse courses",
-    ctaHref = "#",
+    ctaHref = "",
     bottomImage = {
       dark: "/images/dashboard.png",
     },

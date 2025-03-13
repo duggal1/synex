@@ -210,7 +210,7 @@ const Navbar = () => {
                                     </Avatar>
                                 ) : (
                                     <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-full">
-                                        <Link href="/signup" className="flex items-center">
+                                        <Link href="/login" className="flex items-center">
                                             Get started
                                         </Link>
                                     </Button>
@@ -300,7 +300,7 @@ const Navbar = () => {
                                                 Sign in
                                             </Button>
                                         </Link>
-                                        <Link href="/signup" className="w-full">
+                                        <Link href="/login" className="w-full">
                                             <Button
                                                 onClick={() => setOpen(false)}
                                                 variant="default"

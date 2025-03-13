@@ -11,7 +11,7 @@ function Hero() {
       }}
       description=" Synex makes invoice management effortless. Set up in seconds, automate your entire workflow, and focus on growing your business."
       ctaText="Get Started"
-      ctaHref="/signup"
+      ctaHref="/login"
       bottomImage={{
         dark: "/images/dashboard.png"
       }}
