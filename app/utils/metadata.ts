@@ -1,4 +1,3 @@
-
 import { Metadata } from "next";
 
 export const generateMetadata = ({
@@ -7,6 +6,9 @@ export const generateMetadata = ({
     image = "/icons/synex-thumbnail.png",
     icons = {
         icon: [
+            { rel: "icon", url: "/favicon.ico" },
+            { rel: "icon", url: "/favicon.ico", type: "image/svg+xml" },
+            { rel: "icon", sizes: "16x16", url: "/icons/synex-thumbnail.png", type: "image/png" },
             { rel: "icon", sizes: "32x32", url: "/icons/synex-thumbnail.png", type: "image/png" },
             { rel: "apple-touch-icon", sizes: "180x180", url: "/icons/synex-thumbnail.png" }
         ]
