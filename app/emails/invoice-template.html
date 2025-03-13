@@ -9,10 +9,10 @@
     body, html {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.5;
-      color: #1f2937;
-      background-color: #f9fafb;
+      color: #171717;
+      background-color: #fafafa;
       -webkit-text-size-adjust: 100%;
     }
     
@@ -31,166 +31,179 @@
     }
     
     .header-container {
-      background-color: #4f46e5;
+      background-color: #000000;
       color: #ffffff;
-      padding: 32px;
-      border-radius: 8px 8px 0 0;
+      padding: 40px;
+      border-radius: 0;
     }
     
     .content-container {
-      padding: 32px;
+      padding: 40px;
     }
     
     /* Header styles */
     .invoice-title {
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 700;
       margin: 0;
       padding: 0;
       color: #ffffff;
+      letter-spacing: -0.02em;
     }
     
     .invoice-subtitle {
       margin: 4px 0 0 0;
       padding: 0;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 400;
+      letter-spacing: 0.01em;
     }
     
     .meta-row {
-      margin-top: 16px;
+      margin-top: 20px;
     }
     
     .meta-label {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
     }
     
     .meta-value {
-      font-size: 14px;
+      font-size: 15px;
       color: #ffffff;
       font-weight: 500;
+      letter-spacing: 0.01em;
     }
     
     .status-badge {
       display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
+      padding: 6px 16px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
       margin-top: 8px;
       text-transform: uppercase;
     }
     
     .status-paid {
-      background-color: #d1fae5;
-      color: #047857;
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #10b981;
     }
     
     .status-pending {
-      background-color: #fef3c7;
-      color: #b45309;
+      background-color: rgba(250, 204, 21, 0.15);
+      color: #facc15;
     }
     
     .status-overdue {
-      background-color: #fee2e2;
-      color: #b91c1c;
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
     }
     
     .status-urgent {
-      background-color: #fef3c7;
-      color: #b45309;
-      border: 1px solid #b4530950;
+      background-color: rgba(250, 204, 21, 0.15);
+      color: #facc15;
     }
     
     .status-normal {
-      background-color: #e5e7eb;
-      color: #374151;
-      border: 1px solid #37415150;
+      background-color: rgba(161, 161, 170, 0.15);
+      color: #a1a1aa;
     }
     
     /* Party section styles */
     .parties-container {
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
     
     .party-section {
-      padding: 20px;
-      background-color: #f9fafb;
-      border-radius: 8px;
+      padding: 24px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
       margin-bottom: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      box-shadow: none;
+      border: 1px solid #f2f2f2;
+      transition: all 0.2s ease;
+    }
+    
+    .party-section:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     
     .party-title {
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #6b7280;
-      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+      color: #71717a;
+      margin-bottom: 12px;
       font-weight: 600;
     }
     
     .party-name {
       font-weight: 600;
-      font-size: 16px;
+      font-size: 15px;
       margin-bottom: 4px;
-      color: #1f2937;
+      color: #171717;
+      letter-spacing: -0.01em;
     }
     
     .party-detail {
       font-size: 14px;
-      color: #4b5563;
+      color: #525252;
       line-height: 1.4;
     }
     
     /* Items table styles */
     .items-table {
       width: 100%;
-      margin-bottom: 32px;
-      border-radius: 8px;
+      margin-bottom: 40px;
+      border-radius: 4px;
       overflow: hidden;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      box-shadow: none;
+      border: 1px solid #f2f2f2;
     }
     
     .items-table th {
       text-align: left;
-      padding: 12px 16px;
-      background-color: #f9fafb;
-      font-size: 12px;
+      padding: 14px 20px;
+      background-color: #f5f5f5;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.08em;
       font-weight: 600;
-      color: #6b7280;
-      border-top: 1px solid #e5e7eb;
-      border-bottom: 1px solid #e5e7eb;
+      color: #71717a;
+      border: none;
     }
     
     .items-table td {
-      padding: 16px;
-      border-bottom: 1px solid #e5e7eb;
+      padding: 18px 20px;
+      border-bottom: 1px solid #f2f2f2;
       font-size: 14px;
-      color: #1f2937;
+      color: #171717;
       vertical-align: top;
     }
     
     .items-table tr:last-child td {
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: none;
     }
     
     /* Summary table styles */
     .summary-container {
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
     
     .summary-table {
       width: 100%;
       max-width: 280px;
       margin-left: auto;
-      background-color: #f9fafb;
-      border-radius: 8px;
-      padding: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      padding: 20px;
+      border: 1px solid #f2f2f2;
     }
     
     .summary-table td {
@@ -199,46 +212,48 @@
     }
     
     .summary-label {
-      color: #6b7280;
+      color: #525252;
     }
     
     .summary-value {
       text-align: right;
       font-weight: 500;
-      color: #1f2937;
+      color: #171717;
     }
     
     .total-row td {
-      padding-top: 12px;
-      border-top: 1px solid #e5e7eb;
+      padding-top: 16px;
+      border-top: 1px solid #e5e5e5;
       font-size: 16px;
       font-weight: 600;
-      color: #4f46e5;
+      color: #000000;
     }
     
     .total-label {
-      color: #1f2937;
+      color: #171717;
       font-weight: 600;
+      letter-spacing: -0.01em;
     }
     
     /* Note section styles */
     .note-section {
-      padding: 20px;
-      background-color: #f9fafb;
-      border-radius: 8px;
-      margin-bottom: 32px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      padding: 24px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      margin-bottom: 40px;
+      border: 1px solid #f2f2f2;
     }
     
     .note-title {
       font-weight: 600;
       margin-bottom: 8px;
-      color: #1f2937;
+      color: #171717;
       font-size: 14px;
+      letter-spacing: -0.01em;
     }
     
     .note-content {
-      color: #4b5563;
+      color: #525252;
       font-size: 14px;
       line-height: 1.6;
     }
@@ -246,59 +261,63 @@
     /* Button styles */
     .button-container {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
     
     .button {
       display: inline-block;
-      padding: 12px 24px;
-      background-color: #4f46e5;
+      padding: 14px 28px;
+      background-color: #000000;
       color: #ffffff !important;
       text-decoration: none;
-      border-radius: 6px;
+      border-radius: 4px;
       font-weight: 500;
       font-size: 14px;
       text-align: center;
-      mso-padding-alt: 12px 24px;
-      transition: background-color 0.2s;
+      mso-padding-alt: 14px 28px;
+      transition: all 0.2s ease;
+      letter-spacing: 0.01em;
     }
 
     .button:hover {
-      background-color: #4338ca;
+      background-color: #171717;
+      transform: translateY(-1px);
     }
     
     .pay-button {
       display: inline-block;
-      padding: 12px 24px;
+      padding: 14px 28px;
       background-color: #10b981;
       color: #ffffff !important;
       text-decoration: none;
-      border-radius: 6px;
+      border-radius: 4px;
       font-weight: 500;
       font-size: 14px;
       text-align: center;
-      mso-padding-alt: 12px 24px;
-      margin-left: 12px;
-      transition: background-color 0.2s;
+      mso-padding-alt: 14px 28px;
+      margin-left: 16px;
+      transition: all 0.2s ease;
+      letter-spacing: 0.01em;
     }
 
     .pay-button:hover {
       background-color: #059669;
+      transform: translateY(-1px);
     }
     
     /* Footer styles */
     .footer {
       text-align: center;
-      color: #9ca3af;
+      color: #a3a3a3;
       font-size: 13px;
-      border-top: 1px solid #e5e7eb;
-      padding-top: 24px;
+      border-top: 1px solid #f2f2f2;
+      padding-top: 32px;
     }
     
     /* Responsive styles */
     @media screen and (max-width: 600px) {
       .header-container, .content-container {
-        padding: 20px;
+        padding: 24px;
       }
       
       .items-table th {
@@ -308,17 +327,19 @@
       .items-table td {
         display: block;
         text-align: right;
-        padding: 8px 12px;
+        padding: 10px 16px;
         position: relative;
       }
       
       .items-table td::before {
         content: attr(data-label);
         position: absolute;
-        left: 12px;
+        left: 16px;
         font-weight: 600;
-        font-size: 12px;
-        color: #6b7280;
+        font-size: 11px;
+        color: #71717a;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
       
       .summary-table {
@@ -328,27 +349,28 @@
       .button-container {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
       }
 
       .pay-button {
         margin-left: 0;
-        margin-top: 12px;
+        margin-top: 16px;
       }
     }
     
     .payment-info {
-      margin-top: 1rem;
-      padding: 1rem;
-      background-color: rgba(0,0,0,0.05);
-      border-radius: 0.5rem;
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background-color: #f5f5f5;
+      border-radius: 4px;
       text-align: center;
+      border: 1px solid #f2f2f2;
     }
     
     .payment-terms {
-      margin-top: 2rem;
-      padding-top: 1rem;
-      border-top: 1px solid #e5e7eb;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #f2f2f2;
       text-align: center;
     }
   </style>
@@ -356,12 +378,12 @@
 <body>
   <table class="main-table" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td style="padding: 24px;">
+      <td style="padding: 32px;">
         <!-- Invoice Container -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
           <!-- Header Section -->
           <tr>
-            <td class="header-container" bgcolor="#4f46e5">
+            <td class="header-container" bgcolor="#000000">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td>
@@ -370,19 +392,19 @@
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding-top: 20px;">
+                  <td style="padding-top: 24px;">
                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr class="meta-row">
                         <td>
-                          <span class="meta-label">Invoice #:</span><br>
+                          <span class="meta-label">Invoice #</span><br>
                           <span class="meta-value">{{invoiceNumber}}</span>
                         </td>
                         <td>
-                          <span class="meta-label">Issue Date:</span><br>
+                          <span class="meta-label">Issue Date</span><br>
                           <span class="meta-value">{{formattedDate}}</span>
                         </td>
                         <td>
-                          <span class="meta-label">Due Date:</span><br>
+                          <span class="meta-label">Due Date</span><br>
                           <span class="meta-value">{{formattedDueDate}}</span>
                         </td>
                         <td align="right">
@@ -475,31 +497,29 @@
               </div>
               
               <!-- Button Section -->
-              <div class="button-container">
+              <div class="button-container" style="margin: 28px 0;">
                 <a href="{{invoiceLink}}" class="button">View Invoice</a>
-                {{#if showPayButton}}
-                  {{#if paymentLink}}
-                    <a href="{{paymentLink}}" class="pay-button">{{payNowText}}</a>
-                  {{/if}}
+                {{#if stripeEnabled}}
+                <a href="{{paymentLink}}" class="pay-button" target="_blank" rel="noopener noreferrer">{{payNowText}}</a>
                 {{/if}}
               </div>
 
               <!-- Payment Information -->
               <div class="payment-info">
-                {{#if paymentEnabled}}
-                  <p class="text-sm text-zinc-600">
-                    {{paymentMethod}}
-                  </p>
+                {{#if stripeEnabled}}
+                <p style="font-size: 14px; color: #525252; margin: 0;">
+                  You can pay this invoice securely online via credit card
+                </p>
                 {{else}}
-                  <p class="text-sm text-zinc-600">
-                    Please contact us for payment instructions.
-                  </p>
+                <p style="font-size: 14px; color: #525252; margin: 0;">
+                  Please contact us for payment instructions
+                </p>
                 {{/if}}
               </div>
               
               <!-- Add payment terms section -->
               <div class="payment-terms">
-                <p class="text-sm text-zinc-500 mt-4">
+                <p style="color: #737373; font-size: 13px; margin: 0;">
                   Payment Terms: Due {{#if gracePeriod}}within {{gracePeriod}} days{{else}}upon receipt{{/if}}
                 </p>
               </div>
@@ -508,7 +528,7 @@
               <div class="footer">
                 <p>Thank you for your business!</p>
                 {{#if hasOnlinePayment}}
-                <p style="color: #6b7280; font-size: 12px;">This invoice can be paid online securely via credit card.</p>
+                <p style="color: #a3a3a3; font-size: 12px;">This invoice can be paid online securely via credit card.</p>
                 {{/if}}
               </div>
             </td>

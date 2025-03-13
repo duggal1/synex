@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./SubmitButtons";
@@ -45,13 +44,11 @@ export function CreateInvoice({
   const [lastResult, action] = useActionState(createInvoice, undefined);
   const [form, fields] = useForm({
     lastResult,
-
     onValidate({ formData }) {
       return parseWithZod(formData, {
         schema: invoiceSchema,
       });
     },
-
     shouldValidate: "onBlur",
     shouldRevalidate: "onInput",
   });
@@ -79,6 +76,7 @@ export function CreateInvoice({
             value={calcualteTotal}
           />
 
+          {/* Invoice Header */}
           <div className="flex flex-col gap-1 w-fit mb-6">
             <div className="flex items-center gap-4">
               <Badge variant="secondary">Draft</Badge>
@@ -92,6 +90,7 @@ export function CreateInvoice({
             <p className="text-sm text-red-500">{fields.invoiceName.errors}</p>
           </div>
 
+          {/* Invoice No. & Currency */}
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div>
               <Label>Invoice No.</Label>
@@ -134,7 +133,9 @@ export function CreateInvoice({
             </div>
           </div>
 
+          {/* From & To Sections */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
+            {/* From / Your Details */}
             <div>
               <Label>From</Label>
               <div className="space-y-2">
@@ -166,6 +167,7 @@ export function CreateInvoice({
               </div>
             </div>
 
+            {/* To / Client Details */}
             <div>
               <Label>To</Label>
               <div className="space-y-2">
@@ -196,10 +198,52 @@ export function CreateInvoice({
                 <p className="text-red-500 text-sm">
                   {fields.clientAddress.errors}
                 </p>
+                {/* Added Client Company Info (if needed) */}
+                <Label>Client Company Name</Label>
+                <Input
+                  name="clientCompanyName"
+                  placeholder="Client Company Name"
+                />
               </div>
             </div>
           </div>
 
+          {/* Company Information Section */}
+          <div className="border-t pt-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4">Company Information</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <Label>Company Name</Label>
+                <Input
+                  name="companyName"
+                  placeholder="Your Company Name"
+                />
+              </div>
+              <div>
+                <Label>Company Phone</Label>
+                <Input
+                  name="companyPhone"
+                  placeholder="Your Company Phone"
+                />
+              </div>
+              <div>
+                <Label>Company Website</Label>
+                <Input
+                  name="companyWebsite"
+                  placeholder="Your Company Website"
+                />
+              </div>
+              <div>
+                <Label>Company Address</Label>
+                <Input
+                  name="companyAddress"
+                  placeholder="Your Company Address"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Date & Invoice Due */}
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
               <div>
@@ -212,7 +256,6 @@ export function CreateInvoice({
                     className="w-[280px] text-left justify-start"
                   >
                     <CalendarIcon />
-
                     {selectedDate ? (
                       new Intl.DateTimeFormat("en-US", {
                         dateStyle: "long",
@@ -245,7 +288,7 @@ export function CreateInvoice({
                   <SelectValue placeholder="Select due date" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Due on Reciept</SelectItem>
+                  <SelectItem value="0">Due on Receipt</SelectItem>
                   <SelectItem value="15">Net 15</SelectItem>
                   <SelectItem value="30">Net 30</SelectItem>
                 </SelectContent>
@@ -254,6 +297,7 @@ export function CreateInvoice({
             </div>
           </div>
 
+          {/* Invoice Items */}
           <div>
             <div className="grid grid-cols-12 gap-4 mb-2 font-medium">
               <p className="col-span-6">Description</p>
@@ -312,6 +356,7 @@ export function CreateInvoice({
             </div>
           </div>
 
+          {/* Subtotal & Total */}
           <div className="flex justify-end">
             <div className="w-1/3">
               <div className="flex justify-between py-2">
@@ -335,6 +380,7 @@ export function CreateInvoice({
             </div>
           </div>
 
+          {/* Note */}
           <div>
             <Label>Note</Label>
             <Textarea
@@ -346,10 +392,9 @@ export function CreateInvoice({
             <p className="text-red-500 text-sm">{fields.note.errors}</p>
           </div>
 
+          {/* Submit Button */}
           <div className="flex items-center justify-end mt-6">
-            <div>
-              <SubmitButton text="Send Invoice to Client" />
-            </div>
+            <SubmitButton text="Send Invoice to Client" />
           </div>
         </form>
       </CardContent>
