@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
 @layer base {
   :root {
     /* Light mode variables - only used when explicitly toggled */
@@ -92,6 +96,53 @@
     --chart-3: 240 80% 50%;
     --chart-4: 245 85% 45%;
     --chart-5: 250 90% 55%;
+  }
+
+  /* ULTRA MODERN DARK THEME */
+  .dark {
+    /* Core Background & Text */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 97%;
+    
+    /* Primary Colors */
+    --primary: 224 82% 65%;
+    --primary-foreground: 224 10% 97%;
+    --primary-glow: 224 82% 55%;
+    
+    /* Secondary & Accent */
+    --secondary: 260 60% 60%;
+    --secondary-foreground: 260 10% 97%;
+    --accent: 199 90% 65%;
+    --accent-foreground: 199 10% 97%;
+    
+    /* Cards & Containers */
+    --card: 224 71% 5%;
+    --card-foreground: 213 31% 97%;
+    --popover: 224 71% 5%;
+    --popover-foreground: 213 31% 97%;
+    
+    /* Muted Elements */
+    --muted: 224 71% 8%;
+    --muted-foreground: 215 20% 65%;
+    
+    /* Borders & Interactive */
+    --border: 224 71% 12%;
+    --input: 224 71% 12%;
+    --ring: 224 82% 65%;
+    
+    /* Chart Colors */
+    --chart-1: 224 82% 65%;
+    --chart-2: 260 60% 60%;
+    --chart-3: 199 90% 65%;
+    --chart-4: 284 70% 65%;
+    --chart-5: 170 80% 60%;
+    
+    /* Radius & Sidebar */
+    --radius: 0.75rem;
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 213 31% 97%;
+    --sidebar-muted: 224 71% 8%;
+    --sidebar-border: 224 71% 12%;
   }
 
   * {
@@ -204,17 +255,49 @@
   color: #fff;
 }
 
+/* Modern Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 0.2rem;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 0.1rem;
+  width: 2px;
+  height: 0px; /* Removes horizontal scrollbar */
 }
 
 ::-webkit-scrollbar-track {
-  background-color: transparent;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    to bottom,
+    rgba(56, 189, 248, 0.3),
+    rgba(59, 130, 246, 0.5)
+  );
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    to bottom,
+    rgba(56, 189, 248, 0.5),
+    rgba(59, 130, 246, 0.7)
+  );
+}
+
+/* Remove button scrollbars */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, 
+    hsl(var(--primary)),
+    hsl(var(--secondary))
+  );
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 3px;
 }
 
 img, image {
@@ -256,6 +339,21 @@ img, image {
   }
 }
 
+@keyframes fadeIn {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
 @layer utilities {
   .animate-fade-in-up {
     animation: fade-in-up 0.7s cubic-bezier(0.2, 0.0, 0.2, 1.0) forwards;
@@ -276,4 +374,126 @@ img, image {
     animation: gradient-xy 15s ease infinite;
     background-size: 400% 400%;
   }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    @apply transition-colors duration-300;
+  }
+  
+  /* Modern Form Elements */
+  input, textarea, select {
+    @apply rounded-lg bg-background/50;
+    @apply border border-border/50;
+    @apply backdrop-blur-sm;
+    @apply transition-all duration-300;
+    @apply focus:ring-2 focus:ring-primary/20;
+  }
+  
+  /* Modern Interactive Elements */
+  button, a {
+    @apply transition-all duration-300;
+    @apply hover:shadow-lg hover:shadow-primary/10;
+  }
+}
+
+/* Modern Glass Effects */
+.glass-modern {
+  @apply bg-gradient-to-br from-background/80 to-background/90;
+  @apply backdrop-blur-xl border border-border/80;
+  @apply shadow-lg shadow-primary/5;
+}
+
+.card-modern {
+  @apply bg-gradient-to-br from-background/95 to-background/90;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  box-shadow: 
+    0 0 20px rgba(59, 130, 246, 0.05),
+    inset 0 0 12px rgba(56, 189, 248, 0.03);
+  @apply shadow-xl shadow-primary/10;
+}
+
+/* Enhanced Hover Effects */
+.hover-glow {
+  @apply transition-all duration-300;
+}
+
+.hover-glow:hover {
+  @apply shadow-lg shadow-primary/20;
+  @apply -translate-y-0.5;
+}
+
+/* Modern Button Styles */
+.button-modern {
+  @apply bg-gradient-to-r from-primary to-secondary;
+  @apply transition-all duration-300;
+  @apply hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/30;
+}
+
+/* Modern Text Effects */
+.text-gradient {
+  @apply bg-gradient-to-r from-primary to-secondary;
+  @apply bg-clip-text text-transparent;
+}
+
+/* Animation Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Animation Classes */
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    hsl(var(--primary)) 0%,
+    hsl(var(--secondary)) 50%,
+    hsl(var(--primary)) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Modern Border Effect */
+.border-glow {
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 
+    0 0 10px rgba(59, 130, 246, 0.1),
+    inset 0 0 8px rgba(56, 189, 248, 0.05);
+}
+
+/* Print Styles */
+@media print {
+  #resumePreviewContent {
+    zoom: 1 !important;
+    padding: 0;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 0.6cm;
 }

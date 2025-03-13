@@ -489,7 +489,7 @@ const InvoiceBuilder = () => {
         
         /* Container styles */
         .container {
-          max-width: 800px;
+          max-width: 1200px;
           margin: 0 auto;
           background-color: #ffffff;
           ${layout.borderStyle !== 'none' ? `
@@ -659,7 +659,7 @@ const InvoiceBuilder = () => {
         /* For table-based templates */
         .main-table {
           width: 100%;
-          max-width: 800px;
+          max-width: 1100px;
           margin: 0 auto;
           background-color: #ffffff;
         }
@@ -812,24 +812,25 @@ const InvoiceBuilder = () => {
   `;
 
   return (
-    <div className="py-6 container">
+    <div className="mx-auto px-4 py-6 max-w-[1600px] container">
       <h1 className="mb-6 font-bold text-2xl">Invoice Builder</h1>
       
-      <div className="gap-6 grid grid-cols-1 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="bg-white border rounded-md overflow-hidden">
+      <div className="gap-6 grid grid-cols-1 lg:grid-cols-5">
+        <div className="lg:col-span-4 h-screen">
+          <Card className="h-full">
+            <CardContent className="p-6 h-full">
+              <div className="bg-white border rounded-md h-full overflow-hidden">
                 <iframe
                   key={refreshKey}
                   srcDoc={iframeContent}
-                  className="border-0 w-full h-[800px]"
+                  className="border-0 w-full h-full min-h-[calc(100vh-200px)]"
                   title="Invoice Preview"
+                  style={{ minWidth: '1000px' }}
                 />
-        </div>
+              </div>
             </CardContent>
           </Card>
-      </div>
+        </div>
 
         <div className="space-y-6">
           <Card>

@@ -134,7 +134,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       // Use data from token instead of fetching from database again
       if (session.user) {
-        session.user.id = token.id ?? token.sub!;
+        session.user.id = token.id as string ?? token.sub!;
       }
       return session;
     },
