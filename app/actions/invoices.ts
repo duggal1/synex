@@ -13,8 +13,16 @@ export interface Invoice {
   currency?: string;
 }
 
-export async function getInvoices(): Promise<Invoice[]> {
+export async function getInvoices(userId?: string): Promise<Invoice[]> {
+  // If no userId is provided, return an empty array
+  if (!userId) {
+    return [];
+  }
+  
   const invoices = await prisma.invoice.findMany({
+    where: {
+      userId: userId
+    },
     orderBy: {
       createdAt: 'desc'
     },

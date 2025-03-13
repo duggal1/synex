@@ -100,6 +100,25 @@ const CustomTooltip = ({ active, payload, label, currency = "USD" }: any) => {
 };
 
 export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick }: RevenueDashboardProps) {
+  // Add safety checks for empty data
+  const hasData = data && 
+    data.dailyRevenue && 
+    data.dailyRevenue.length > 0 && 
+    data.monthlyRevenue && 
+    data.monthlyRevenue.length > 0;
+
+  // If no data is available, show a message
+  if (!hasData) {
+    return (
+      <div className="flex flex-col justify-center items-center bg-black/40 backdrop-blur-xl p-12 border border-blue-900/20 rounded-xl">
+        <div className="text-center">
+          <h2 className="mb-2 font-bold text-white text-xl">No Revenue Data Available</h2>
+          <p className="text-zinc-400">Create invoices to start tracking your revenue metrics.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="gap-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
@@ -218,7 +237,7 @@ export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="gap-6 grid grid-cols-1 lg:grid-cols-12">
             <Card className={cn(
               "lg:col-span-8",
               "relative overflow-hidden",
@@ -234,7 +253,7 @@ export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick
               <CardContent>
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data.monthlyRevenue}>
+                    <AreaChart data={data.monthlyRevenue.length > 0 ? data.monthlyRevenue : [{ name: 'No Data', total: 0, paid: 0 }]}>
                       <defs>
                         <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.3}/>
@@ -373,9 +392,9 @@ export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick
                       key={payment.id}
                       className="bg-black/20 hover:bg-zinc-800/30 p-4 border border-blue-900/30 hover:border-blue-500/20 rounded-xl transition-all duration-300"
                     >
-                      <div className="flex justify-between items-center w-full gap-4">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="flex-shrink-0 w-10 h-10 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center">
+                      <div className="flex justify-between items-center gap-4 w-full">
+                        <div className="flex flex-1 items-center gap-3 min-w-0">
+                          <div className="flex flex-shrink-0 justify-center items-center bg-blue-500/10 border border-blue-500/20 rounded-lg w-10 h-10">
                             <svg 
                               className="w-5 h-5 text-blue-500" 
                               fill="none" 
@@ -390,7 +409,7 @@ export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick
                               />
                             </svg>
                           </div>
-                          <div className="min-w-0 flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="font-medium text-white text-sm truncate">
                               {payment.customerName || `Payment #${payment.id.slice(0, 8)}`}
                             </p>
@@ -411,7 +430,7 @@ export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick
                               currency: payment.currency || "USD"
                             })}
                           </p>
-                          <p className="text-zinc-500 text-xs mt-1">
+                          <p className="mt-1 text-zinc-500 text-xs">
                             {payment.status}
                           </p>
                         </div>
@@ -535,7 +554,7 @@ export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick
                   </div>
                   <div className="h-[180px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={data.dailyRevenue.slice(-14)}>
+                      <LineChart data={data.dailyRevenue.length > 0 ? data.dailyRevenue.slice(-14) : [{ name: 'No Data', paid: 0 }]}>
                         <defs>
                           <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.8}/>
@@ -592,7 +611,7 @@ export function RevenueDashboard({ data, showAllPayments = false, onViewAllClick
             <CardContent>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.dailyRevenue} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={data.dailyRevenue.length > 0 ? data.dailyRevenue : [{ fullDate: 'No Data', total: 0, paid: 0 }]} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <defs>
                       <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.8}/>

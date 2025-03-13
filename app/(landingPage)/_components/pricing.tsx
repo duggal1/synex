@@ -19,12 +19,12 @@ const Pricing = () => {
     return (
         <div className="relative flex flex-col justify-center items-center py-12 md:py-16 lg:py-24 w-full">
             <Container>
-                <div className="flex flex-col items-center mx-auto max-w-xl text-center">
+                <div className="flex flex-col items-center mx-auto max-w-xl text-neutral-100 text-center text">
                     <SectionBadge title="Choose your plan" />
-                    <h2 className="mt-6 font-heading font-medium text-2xl md:text-4xl lg:text-5xl !leading-snug">
+                    <h2 className="mt-6 font-heading font-black text-4xl md:text-4xl lg:text-5xl !leading-snug">
                         Simple and transparent pricing
                     </h2>
-                    <p className="mt-6 text-base md:text-lg text-center text-accent-foreground/80">
+                    <p className="mt-6 font-black text-sm md:text-lg text-center text-accent-foreground/80">
                         Choose the plan that suits your needs. No hidden fees, no surprises.
                     </p>
                 </div>
@@ -117,9 +117,9 @@ const Plan = ({
                 )}
             >
                 {id === "pro" && (
-                    <div className="inline-flex -top-3 left-1/2 absolute items-center bg-gradient-to-r from-primary to-violet-500 px-1 rounded-full min-w-min max-w-fit h-7 whitespace-nowrap -translate-x-1/2 select-none">
+                    <div className="inline-flex -top-3 left-1/2 absolute items-center bg-gradient-to-r from-violet-600 to-pink-600 px-1 rounded-full min-w-min max-w-fit h-7 whitespace-nowrap -translate-x-1/2 select-none -pink-500">
                         <span className="flex-1 bg-[length:250%_100%] bg-clip-text bg-gradient-to-r from-foreground to-foreground/80 px-2 font-medium text-transparent text-sm animate-background-shine">
-                            Most Popular
+                        🎉  Most Popular
                         </span>
                     </div>
                 )}
@@ -176,7 +176,7 @@ const Plan = ({
                         className="shadow-none w-full hover:scale-100 hover:translate-y-0"
                     >
 
-                        <Link href={""}>
+                        <Link href={"/dashboard/upgrade"}>
                             {buttonText}
                         </Link>
                     </Button>

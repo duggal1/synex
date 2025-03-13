@@ -12,54 +12,52 @@ type PLAN = {
 
 export const PLANS: PLAN[] = [
     {
-        id: "starter",
-        title: "Starter",
-        desc: "Perfect for small teams starting their hiring journey",
-        monthlyPrice: 49,
-        yearlyPrice: 499,
-        buttonText: "Start Free",
+        id: "free",
+        title: "Free",
+        desc: "Get started with AI-powered invoicing at zero cost.",
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+        buttonText: "Start for Free",
         features: [
-            "Up to 3 active job posts",
-            "Basic candidate verification",
-            "Email support",
-            "Basic candidate matching",
-            "48-hour response time"
+            "Up to 5 invoices per month",
+            "Limited Magnetic AI automation",
+            "Basic invoice builder",
+            "Standard email support",
+            "Basic data insights"
         ],
         link: ""
     },
     {
         id: "pro",
-        title: "Professional",
-        desc: "For growing teams who need serious hiring power",
-        monthlyPrice: 99,
-        yearlyPrice: 990,
-        buttonText: "Start Hiring",
+        title: "Pro",
+        desc: "For businesses needing full automation and efficiency.",
+        monthlyPrice: 19,
+        yearlyPrice: 190,
+        buttonText: "Upgrade to Pro",
         features: [
-            "Unlimited job posts",
-            "Triple-layer verification",
-            "AI-powered candidate matching",
-            "24-hour candidate response guarantee",
-            "Custom hiring pipeline",
-            "Advanced analytics dashboard",
-            "Priority support"
+            "Unlimited invoices",
+            "Full Magnetic AI automation",
+            "Advanced invoice builder",
+            "Automated email reminders",
+            "AI-powered data extraction",
+            "Priority email support"
         ],
         link: ""
     },
     {
         id: "enterprise",
         title: "Enterprise",
-        desc: "Custom solutions for large-scale hiring needs",
-        monthlyPrice: 299,
-        yearlyPrice: 2990,
+        desc: "Custom solutions for large-scale invoicing automation.",
+        monthlyPrice: 49,
+        yearlyPrice: 490,
         buttonText: "Contact Sales",
         features: [
             "Everything in Pro",
-            "Custom verification process",
+            "Custom AI automation rules",
+            "Bulk invoice processing",
+            "Team collaboration tools",
             "Dedicated account manager",
-            "Custom AI matching rules",
-            "API access",
-            "Advanced team collaboration",
-            "Custom analytics"
+            "API access & custom integrations"
         ],
         link: ""
     }

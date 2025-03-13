@@ -6,6 +6,8 @@ import { format, subDays, startOfMonth, endOfMonth, differenceInDays } from "dat
 import { getInvoices, Invoice } from "@/app/actions/invoices";
 import { motion, AnimatePresence } from "framer-motion";
 import Loader from "@/components/Loader";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 
 interface RecentPayment {
@@ -71,11 +73,45 @@ export default function RevenuePage() {
   const [data, setData] = useState<RevenueData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAllPayments, setShowAllPayments] = useState(false);
+  const { data: session } = useSession();
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const invoices = await getInvoices();
+        // Only fetch invoices if we have a user ID
+        const userId = session?.user?.id;
+        if (!userId) {
+          return;
+        }
+        
+        const invoices = await getInvoices(userId);
+        
+        // If no invoices, set empty data
+        if (invoices.length === 0) {
+          setData({
+            dailyRevenue: [],
+            monthlyRevenue: [],
+            paymentMethodsData: [],
+            currentMonthTotal: 0,
+            currentMonthPaid: 0,
+            dailyAverage: 0,
+            paymentRate: 0,
+            totalRevenue: 0,
+            totalPaid: 0,
+            totalPaymentRate: 0,
+            averageInvoiceValue: 0,
+            averageDaysToPayment: 0,
+            recentPayments: [],
+            weeklyGrowth: 0,
+            monthlyGrowth: 0,
+            successfulPayments: 0,
+            failedPayments: 0,
+            pendingPayments: 0,
+            averageTicketSize: 0,
+            topPaymentMethods: []
+          });
+          return;
+        }
         
         // Calculate daily revenue for the last 30 days
         const dailyRevenue = Array.from({ length: 30 }, (_, i) => {
@@ -130,13 +166,6 @@ export default function RevenuePage() {
           return acc;
         }, {});
 
-        const paymentMethodsData = Object.entries(paymentMethods).map(([name, methodData]) => ({
-          name,
-          value: methodData.total,
-          count: methodData.count,
-          recentCount: methodData.recentCount
-        }));
-
         // Calculate current month metrics
         const now = new Date();
         const currentMonthStart = startOfMonth(now);
@@ -153,7 +182,7 @@ export default function RevenuePage() {
         // Calculate weekly and monthly growth
         const lastMonth = monthlyRevenue[monthlyRevenue.length - 2];
         const currentMonth = monthlyRevenue[monthlyRevenue.length - 1];
-        const monthlyGrowth = lastMonth.paid > 0 
+        const monthlyGrowth = lastMonth && lastMonth.paid > 0 
           ? Math.round(((currentMonth.paid - lastMonth.paid) / lastMonth.paid) * 100)
           : 0;
 
@@ -178,16 +207,16 @@ export default function RevenuePage() {
           .filter((inv: Invoice) => inv.status === 'paid')
           .reduce((sum: number, inv: Invoice) => sum + inv.total, 0);
 
-        const totalPaymentRate = Math.round((totalPaid / totalRevenue) * 100);
+        const totalPaymentRate = totalRevenue > 0 ? Math.round((totalPaid / totalRevenue) * 100) : 0;
         const paymentRate = currentMonthTotal > 0 
           ? Math.round((currentMonthPaid / currentMonthTotal) * 100)
           : 0;
 
         // Calculate average ticket size
-        const averageTicketSize = totalPaid / successfulPayments || 0;
+        const averageTicketSize = successfulPayments > 0 ? totalPaid / successfulPayments : 0;
 
         // Calculate average invoice value
-        const averageInvoiceValue = totalRevenue / invoices.length;
+        const averageInvoiceValue = invoices.length > 0 ? totalRevenue / invoices.length : 0;
 
         // Calculate average days to payment
         const paidInvoices = invoices.filter((inv: Invoice) => inv.status === 'paid');
@@ -196,14 +225,14 @@ export default function RevenuePage() {
           const paidDate = new Date(inv.paidAt || inv.createdAt);
           return sum + differenceInDays(paidDate, createdDate);
         }, 0);
-        const averageDaysToPayment = Math.round(totalDaysToPayment / paidInvoices.length) || 0;
+        const averageDaysToPayment = paidInvoices.length > 0 ? Math.round(totalDaysToPayment / paidInvoices.length) : 0;
 
         // Calculate top payment methods
         const topPaymentMethods = Object.entries(paymentMethods)
           .map(([method, data]) => ({
             method,
             amount: data.total,
-            percentage: Math.round((data.total / totalPaid) * 100)
+            percentage: totalPaid > 0 ? Math.round((data.total / totalPaid) * 100) : 0
           }))
           .sort((a, b) => b.amount - a.amount)
           .slice(0, 3);
@@ -211,7 +240,7 @@ export default function RevenuePage() {
         // Get recent payments
         const recentPayments = paidInvoices
           .sort((a, b) => new Date(b.paidAt || b.createdAt).getTime() - new Date(a.paidAt || a.createdAt).getTime())
-          .slice(0, 5)
+          .slice(0, 20)
           .map(payment => ({
             id: payment.id,
             total: payment.total,
@@ -227,7 +256,12 @@ export default function RevenuePage() {
         setData({
           dailyRevenue,
           monthlyRevenue,
-          paymentMethodsData,
+          paymentMethodsData: Object.entries(paymentMethods).map(([name, methodData]) => ({
+            name,
+            value: methodData.total,
+            count: methodData.count,
+            recentCount: methodData.recentCount
+          })),
           currentMonthTotal,
           currentMonthPaid,
           dailyAverage,
@@ -252,21 +286,26 @@ export default function RevenuePage() {
       }
     }
 
-    fetchData();
-  }, []);
+    // Only fetch data when session is available
+    if (session?.user?.id) {
+      fetchData();
+    }
+  }, [session]);
 
- 
+  if (!session) {
+    return <Loader />;
+  }
 
   if (!data) {
+    return <Loader />;
+  }
 
-      return <Loader />;
-    }
   return (
     <div className="relative bg-black min-h-screen">
       {/* Deep blue-black gradient background */}
     
       {/* Main content container */}
-      <div className="relative mx-auto px-4 py-12 container z-10">
+      <div className="z-10 relative mx-auto px-4 py-12 container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -284,17 +323,34 @@ export default function RevenuePage() {
         </motion.div>
 
         <AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <RevenueDashboard 
-              data={data} 
-              showAllPayments={showAllPayments}
-              onViewAllClick={() => setShowAllPayments(!showAllPayments)}
-            />
-          </motion.div>
+          {data.dailyRevenue.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex flex-col justify-center items-center bg-black/40 backdrop-blur-xl p-12 border border-blue-900/20 rounded-xl"
+            >
+              <div className="text-center">
+                <h2 className="mb-2 font-bold text-white text-xl">No Revenue Data Yet</h2>
+                <p className="mb-6 text-zinc-400">You haven&apos;t created any invoices yet. Create your first invoice to start tracking your revenue.</p>
+                <Link href="/dashboard/invoices/create" className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium text-white transition-all duration-300">
+                  Create Your First Invoice
+                </Link>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <RevenueDashboard 
+                data={data} 
+                showAllPayments={showAllPayments}
+                onViewAllClick={() => setShowAllPayments(!showAllPayments)}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </div>
