@@ -157,7 +157,7 @@ const Navbar = () => {
                                             Sign in
                                         </Button>
                                     </Link>
-                                    <Link href="/signup">
+                                    <Link href="/login">
                                         <Button size="sm" className="bg-gradient-to-r from-indigo-600 hover:from-indigo-700 to-indigo-800 hover:to-indigo-900 rounded-full transition-all duration-300">
                                             Get started
                                         </Button>
