@@ -1,8 +1,17 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import NextAuth from "next-auth";
+import NextAuth, { DefaultSession } from "next-auth";
 import Nodemailer from "next-auth/providers/nodemailer";
 import Google from "next-auth/providers/google";
 import prisma from "./db";
+
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+    } & DefaultSession["user"];
+  }
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -15,9 +24,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Optimize Google auth settings
       authorization: {
         params: {
-          prompt: "select_account",
+          prompt: "consent", // Changed from "select_account" to "consent" for faster auth
           access_type: "offline",
           response_type: "code"
         }
@@ -44,15 +54,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
-        // If there's no email, allow sign in
+        // Fast path: if no email, allow sign in
         if (!user.email) {
           return true;
         }
 
-        // Check if user exists with this email
+        // Optimized query - only fetch what's actually needed
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
-          include: { accounts: true },
+          select: {
+            id: true,
+            accounts: {
+              where: account ? { 
+                provider: account.provider,
+              } : undefined,
+              select: {
+                providerAccountId: true,
+                provider: true
+              }
+            }
+          },
         });
 
         // If no user exists with this email, allow sign in
@@ -97,13 +118,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
     },
     async jwt({ token, user, account }) {
-      // Add user data to token for faster access
+      // Only add minimal required data to token
       if (user) {
         token.id = user.id as string;
-        token.email = user.email as string;
+        // No need to duplicate email, it's already in the token
       }
       
-      // Keep the account info in the token for faster provider-specific operations
+      // Only store provider information
       if (account) {
         token.provider = account.provider;
       }
@@ -113,28 +134,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       // Use data from token instead of fetching from database again
       if (session.user) {
-        session.user.id = token.sub || (token.id as string);
-        // Add any other user data you need from token
+        session.user.id = token.id ?? token.sub!;
       }
       return session;
     },
+
     async redirect({ url, baseUrl }) {
+      // Simplified and optimized redirect logic
       try {
-        // Special case for OAuthAccountNotLinked error
-        // Instead of redirecting to error page, redirect directly to dashboard
+        // Fast path for OAuthAccountNotLinked error
         if (url.includes("error=OAuthAccountNotLinked")) {
           return `${baseUrl}/dashboard`;
-        }
-        
-        // Fast path for dashboard redirects
-        if (url.includes("/dashboard")) {
-          return url;
         }
         
         // Allows relative callback URLs
         if (url.startsWith("/")) return `${baseUrl}${url}`;
         // Allows callback URLs on the same origin
-        else if (new URL(url).origin === baseUrl) return url;
+        if (new URL(url).origin === baseUrl) return url;
+        
         return baseUrl;
       } catch (error) {
         console.error("Error in redirect callback:", error);
