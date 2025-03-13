@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
-import { LogOut, MenuIcon, User, XIcon } from "lucide-react";
+import { LogOut, MenuIcon, User, XIcon, ZapIcon } from "lucide-react";
 import Link from "next/link";
 import { RefObject, useEffect, useRef, useState } from "react";
 import AnimationContainer from "./global/animation-container";
@@ -21,6 +21,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+   import Image from "next/image";
 
 const Navbar = () => {
     const { data: session, status } = useSession();
@@ -80,8 +82,9 @@ const Navbar = () => {
                         transition={{ duration: 0.2 }}
                     >
                         <Link href="/" className="flex items-center gap-2">
-                            <div className="pl-16 font-black text-neutral-200 text-3xl"> Synex 
-                            <span className="text-[#3d28c8]">AI</span>
+                            <Image src="/logo.png" alt="SynexAI" width={30} height={30} />
+                            <div className="font-black text-neutral-200 text-3xl"> Synex 
+                            <span className="text-[#323dff]">AI</span>
                             </div>
                         </Link>
                     </motion.div>
@@ -111,16 +114,16 @@ const Navbar = () => {
                             ) : isAuthenticated ? (
                                 <>
                                     <Link href="/dashboard">
-                                        <Button variant="default" className="bg-gradient-to-r from-indigo-600 hover:from-indigo-700 to-indigo-800 hover:to-indigo-900 rounded-full transition-all duration-300">
+                                        <Button variant="default" className="bg-gradient-to-r from-blue-600 hover:from-blue-800 to-violet-600 hover:to-violet-700 rounded-full transition-all duration-300">
                                             Dashboard
                                         </Button>
                                     </Link>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Avatar className="border-2 border-indigo-600 hover:border-indigo-800 w-9 h-9 transition-all duration-300 cursor-pointer">
+                                            <Avatar className="border-2 border-violet-600 hover:border-violet-800 w-9 h-9 transition-all duration-300 cursor-pointer">
                                                 <AvatarImage src={session?.user?.image || ""} />
                                                 <AvatarFallback className="bg-indigo-600 text-white">
-                                                    {session?.user?.name?.charAt(0) || <User className="w-4 h-4" />}
+                                                    {session?.user?.name?.charAt(1) || <User className="w-4 h-4" />}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </DropdownMenuTrigger>
@@ -158,7 +161,8 @@ const Navbar = () => {
                                         </Button>
                                     </Link>
                                     <Link href="/login">
-                                        <Button size="sm" className="bg-gradient-to-r from-indigo-600 hover:from-indigo-700 to-indigo-800 hover:to-indigo-900 rounded-full transition-all duration-300">
+                                        <Button size="sm" className="bg-gradient-to-r from-blue-600 hover:from-blue-800 to-violet-600 hover:to-violet-800 rounded-full transition-all duration-300">
+                                        <ZapIcon className="mr-2 w-4 h-4 text-white" />
                                             Get started
                                         </Button>
                                     </Link>
@@ -209,8 +213,9 @@ const Navbar = () => {
                                         </AvatarFallback>
                                     </Avatar>
                                 ) : (
-                                    <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-full">
+                                    <Button size="sm" className="bg-gradient-to-r from-blue-600 to-violet-600 rounded-full"> 
                                         <Link href="/login" className="flex items-center">
+                                        <ZapIcon className="mr-2 w-4 h-4 text-white" />
                                             Get started
                                         </Link>
                                     </Button>
@@ -321,3 +326,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

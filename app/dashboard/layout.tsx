@@ -104,6 +104,10 @@ export default async function DashboardLayout({
                     <Link href="/dashboard/invoices">Invoices</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/dashboard/Agentic">Agentic</Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem asChild>
                     <Link href="/dashboard/revenue">Revenue</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
