@@ -140,7 +140,11 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                       alt="Dashboard preview"
                       width={1200}
                       height={800}
-                      priority
+                      priority={true}
+                      loading="eager"
+                      placeholder="blur"
+                      blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI4MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzExMTEyMiIvPjwvc3ZnPg=="
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                     />
                     {/* Futuristic glow effect under the image */}
                     <div className="-bottom-10 left-1/2 absolute bg-violet-600/20 blur-[50px] rounded-full w-[80%] h-20 -translate-x-1/2"></div>

@@ -4,36 +4,43 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckIcon } from "lucide-react";
-import { PLANS } from "../constants/pricing";
-import { cn } from "@/lib";
-import NumberTicker from "./number-ticker";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import SectionBadge from "./ui/section-badge";
+import { Button } from "@/components/ui/button";
+import NumberTicker from "./number-ticker";
 import Container from "./contanier";
+import { PLANS } from "../constants/pricing";
+import { cn } from "@/lib";
+
 
 
 type Plan = "monthly" | "yearly";
 
 const Pricing = () => {
     return (
-        <div className="relative flex flex-col justify-center items-center py-12 md:py-16 lg:py-24 w-full">
-            <Container>
-                <div className="flex flex-col items-center mx-auto max-w-xl text-neutral-100 text-center text">
-                    <SectionBadge title="Choose your plan" />
-                    <h2 className="mt-6 font-heading font-black text-4xl md:text-4xl lg:text-5xl !leading-snug">
-                        Simple and transparent pricing
-                    </h2>
-                    <p className="mt-6 font-black text-sm md:text-lg text-center text-accent-foreground/80">
-                        Choose the plan that suits your needs. No hidden fees, no surprises.
-                    </p>
-                </div>
-            </Container>
-            <div className="relative flex flex-col justify-center items-center mt-8 w-full">
-                <div className="hidden lg:block top-1/2 right-2/3 -z-10 absolute bg-primary/15 blur-[10rem] w-96 h-96 -translate-y-1/2 translate-x-1/4"></div>
-                <div className="hidden lg:block top-1/2 left-2/3 -z-10 absolute bg-violet-500/15 blur-[10rem] w-96 h-96 -translate-x-1/4 -translate-y-1/2"></div>
+        <div className="flex flex-col items-center justify-center py-12 md:py-16 lg:py-32 w-full relative">
+      
+        <Container
+        
+      
+        
+        >
+            <div className="flex flex-col items-center text-center max-w-xl mx-auto">
+                <SectionBadge title="Recruitment Plans" />
+                <h2 className="text-2xl md:text-4xl lg:text-5xl font-black !leading-snug mt-6 bg-gradient-to-r from-blue-400 via-violet-400 to-blue-500 bg-clip-text text-transparent">
+                    Choose Your Hiring Power
+                </h2>
+                <p className="text-base md:text-lg text-center text-accent-foreground/80 mt-6">
+                    Start with verified candidates today. Scale as you grow.
+                </p>
+            </div>
+        </Container>
+       
+            <div className="mt-8 w-full relative flex flex-col items-center justify-center">
+                <div className="absolute hidden lg:block top-1/2 right-2/3 translate-x-1/4 -translate-y-1/2 w-96 h-96 bg-primary/15 blur-[10rem] -z-10"></div>
+                <div className="absolute hidden lg:block top-1/2 left-2/3 -translate-x-1/4 -translate-y-1/2 w-96 h-96 bg-violet-500/15 blur-[10rem] -z-10"></div>
                 <Container>
-                    <Tabs defaultValue="monthly" className="flex flex-col justify-center items-center w-full">
+                    <Tabs defaultValue="monthly" className="w-full flex flex-col items-center justify-center">
                         <TabsList>
                             <TabsTrigger value="monthly">
                                 Monthly
@@ -43,7 +50,7 @@ const Pricing = () => {
                             </TabsTrigger>
                         </TabsList>
                         <TabsContent value="monthly">
-                            <div className="gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-14 w-full">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mt-14">
                                 {PLANS.map((plan, index) => (
                                     <Plan
                                         key={index}
@@ -55,7 +62,7 @@ const Pricing = () => {
                             </div>
                         </TabsContent>
                         <TabsContent value="yearly">
-                            <div className="gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-14 w-full">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mt-14">
                                 {PLANS.map((plan, index) => (
                                     <Plan
                                         key={index}
@@ -108,38 +115,41 @@ const Plan = ({
     const displayedPrice = getDisplayedPrice(plan, monthlyPrice, yearlyPrice);
 
     return (
-        <div key={index} className="relative flex flex-col saturate-150 rounded-2xl w-full">
-
+        <div key={index} className="w-full relative flex flex-col saturate-150 rounded-2xl group hover:scale-[1.02] transition-all duration-500">
+            <div className="absolute inset-0 bg-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
             <div
                 className={cn(
-                    "flex flex-col size-full border rounded-2xl relative p-3 [background-image:linear-gradient(345deg,rgba(255,255,255,0.01)_0%,rgba(255,255,255,0.03)_100%)]",
-                    id === "pro" ? "border-primary/80" : "border-border/60",
+                    "flex flex-col size-full border rounded-2xl relative p-3",
+                    "bg-gradient-to-br from-background/95 to-background/90 backdrop-blur-xl",
+                    "border-blue-950/20 hover:border-violet-500/30",
+                    "transition-all duration-500",
+                    id === "pro" ? "border-violet-500/50" : "border-border/60",
                 )}
             >
                 {id === "pro" && (
-                    <div className="inline-flex -top-3 left-1/2 absolute items-center bg-gradient-to-r from-violet-600 to-pink-600 px-1 rounded-full min-w-min max-w-fit h-7 whitespace-nowrap -translate-x-1/2 select-none -pink-500">
-                        <span className="flex-1 bg-[length:250%_100%] bg-clip-text bg-gradient-to-r from-foreground to-foreground/80 px-2 font-medium text-transparent text-sm animate-background-shine">
-                        🎉  Most Popular
+                    <div className="max-w-fit min-w-min inline-flex items-center whitespace-nowrap px-1 h-7 rounded-full bg-gradient-to-r from-blue-500 to-violet-500 absolute -top-3 left-1/2 -translate-x-1/2 select-none">
+                        <span className="flex-1 text-sm px-2 font-medium text-white animate-shimmer">
+                            Most Popular
                         </span>
                     </div>
                 )}
                 <div className="flex flex-col p-3 w-full">
-                    <h2 className="font-medium text-xl">
+                    <h2 className="text-xl font-medium">
                         {title}
                     </h2>
-                    <p className="mt-2 text-muted-foreground text-sm break-words">
+                    <p className="text-sm mt-2 text-muted-foreground break-words">
                         {desc}
                     </p>
                 </div>
-                <hr className="bg-border border-none w-full h-px shrink-0" role="separator" />
-                <div className="relative flex flex-col flex-1 gap-4 p-3 w-full h-full text-left break-words align-top">
+                <hr className="shrink-0 border-none w-full h-px bg-border" role="separator" />
+                <div className="relative flex flex-col flex-1 align-top w-full p-3 h-full break-words text-left gap-4">
                     <div className="flex items-end gap-2">
                         <div className="flex items-end gap-1 w-40">
-                            <span className="font-bold text-3xl md:text-4xl">
+                            <span className="text-2xl md:text-2xl font-black">
                                 ${displayedPrice === 0 ? 0 : <NumberTicker value={displayedPrice} />}
                             </span>
                             {/* In here 120 * 0.8 = 96 and /12 to get monthly price */}
-                            <span className="font-headin font-medium text-muted-foreground text-lg">
+                            <span className="text-md text-muted-foreground font-medium font-headin">
                                 per {plan === "monthly" ? "month" : "month"}
                             </span>
                         </div>
@@ -151,7 +161,7 @@ const Plan = ({
                                     exit={{ opacity: 0, scale: 0 }}
                                     transition={{ duration: 0.2 }}
                                     aria-hidden="true"
-                                    className="bg-primary mb-1 px-2 py-0.5 rounded font-medium text-foreground text-xs"
+                                    className="text-xs px-2 py-0.5 rounded mb-1 text-foreground bg-primary font-medium"
                                 >
                                     -20%
                                 </motion.span>
@@ -162,21 +172,21 @@ const Plan = ({
                         {features.map((feature, index) => (
                             <li key={index} className="flex items-center gap-2">
                                 <CheckIcon aria-hidden="true" className="w-5 h-5 text-primary" />
-                                <p className="text-muted-foreground text-sm md:text-base">
+                                <p className="text-sm md:text-base text-muted-foreground">
                                     {feature}
                                 </p>
                             </li>
                         ))}
                     </ul>
                 </div>
-                <div className="flex items-center mt- p-3 w-full h-auto">
+                <div className="p-3 mt- h-auto flex w-full items-center">
                     <Button
                         asChild
-                        variant={id === "pro" ? "default" : "tertiary"}
-                        className="shadow-none w-full hover:scale-100 hover:translate-y-0"
+                        variant={id === "pro" ? "default" : "destructive"}
+                        className="w-full hover:scale-100 hover:translate-y-0 shadow-none"
                     >
 
-                        <Link href={"/dashboard/upgrade"}>
+                        <Link href={""}>
                             {buttonText}
                         </Link>
                     </Button>
