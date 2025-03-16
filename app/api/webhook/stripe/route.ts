@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
               paymentStatus: session.payment_status,
               paymentMethod: session.payment_method_types?.[0] || 'card',
               receiptEmail: session.customer_details?.email || '',
-              receiptUrl: (session as any).payment_intent?.charges?.data?.[0]?.receipt_url || null,
+              receiptUrl: (session as any).payment_intent?.charges?.data?.[0]?.receipt_url || '',
             }
           }
         },
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
           invoiceLink: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/invoices/${invoice.id}`,
           paymentMethod: session.payment_method_types?.[0] || 'card',
           customerEmail: session.customer_email || invoice.clientEmail,
-          receiptUrl: (session as any).payment_intent?.charges?.data?.[0]?.receipt_url || null,
+          receiptUrl: (session as any).payment_intent?.charges?.data?.[0]?.receipt_url || '',
         }
       });
 
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
           businessName: invoice.fromName,
           businessEmail: invoice.fromEmail,
           receiptLink: `${process.env.NEXT_PUBLIC_APP_URL}/invoice/${invoice.id}/receipt`,
-          receiptUrl: (session as any).payment_intent?.charges?.data?.[0]?.receipt_url || null,
+          receiptUrl: (session as any).payment_intent?.charges?.data?.[0]?.receipt_url || '',
         }
       });
     }

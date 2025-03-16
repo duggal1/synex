@@ -499,8 +499,8 @@
               <!-- Button Section -->
               <div class="button-container" style="margin: 28px 0;">
                 <a href="{{invoiceLink}}" class="button">View Invoice</a>
-                {{#if stripeEnabled}}
-                <a href="{{paymentLink}}" class="pay-button" target="_blank" rel="noopener noreferrer">{{payNowText}}</a>
+                {{#if showPayButton}}
+                <a href="{{paymentLink}}" class="pay-button" target="_blank" rel="noopener noreferrer">Pay Now via Credit Card</a>
                 {{/if}}
               </div>
 

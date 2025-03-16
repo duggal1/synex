@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
           data: {
             status: "PAID",
             paidAt: new Date(),
-            stripePaymentIntentId: paymentIntent.id,
+            stripePaymentIntentId: paymentIntent.id || '',
             paymentMethod: "STRIPE",
           },
         });
@@ -65,4 +65,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
-} 
+}

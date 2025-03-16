@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import prisma from "@/app/utils/db";
-import { SubscriptionPlan } from "@prisma/client";
+
 
 // Initialize Stripe with the API key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {

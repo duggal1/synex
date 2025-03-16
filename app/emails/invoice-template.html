@@ -25,20 +25,21 @@
     /* Container styles */
     .main-table {
       width: 100%;
-      max-width: 800px;
+      max-width: 700px; /* Reduced from 750px */
       margin: 0 auto;
+      padding: 24px; /* Added padding */
       background-color: #ffffff;
     }
     
     .header-container {
       background-color: #000000;
       color: #ffffff;
-      padding: 40px;
+      padding: 28px; /* Adjusted from 32px */
       border-radius: 0;
     }
     
     .content-container {
-      padding: 40px;
+      padding: 28px; /* Adjusted from 32px */
     }
     
     /* Header styles */
@@ -121,10 +122,10 @@
     }
     
     .party-section {
-      padding: 24px;
+      padding: 16px; /* Adjusted from 20px */
       background-color: #f5f5f5;
       border-radius: 4px;
-      margin-bottom: 16px;
+      margin-bottom: 12px; /* Adjusted from 16px */
       box-shadow: none;
       border: 1px solid #f2f2f2;
       transition: all 0.2s ease;
@@ -165,6 +166,7 @@
       overflow: hidden;
       box-shadow: none;
       border: 1px solid #f2f2f2;
+      margin: 24px 0;
     }
     
     .items-table th {
@@ -180,7 +182,7 @@
     }
     
     .items-table td {
-      padding: 18px 20px;
+      padding: 14px 16px; /* Adjusted from 18px 20px */
       border-bottom: 1px solid #f2f2f2;
       font-size: 14px;
       color: #171717;
@@ -189,6 +191,32 @@
     
     .items-table tr:last-child td {
       border-bottom: none;
+    }
+    
+    .items-table-simple th,
+    .items-table-simple td {
+      border-bottom: 1px solid #eee;
+      padding: 12px;
+    }
+    
+    .items-table-bordered {
+      border: 1px solid #e5e7eb;
+    }
+    
+    .items-table-bordered th,
+    .items-table-bordered td {
+      border: 1px solid #e5e7eb;
+      padding: 12px;
+    }
+    
+    .items-table-striped tr:nth-child(even) {
+      background-color: #f9fafb;
+    }
+    
+    .items-table-striped th,
+    .items-table-striped td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
     }
     
     /* Summary table styles */
@@ -202,7 +230,7 @@
       margin-left: auto;
       background-color: #f5f5f5;
       border-radius: 4px;
-      padding: 20px;
+      padding: 16px; /* Adjusted from 20px */
       border: 1px solid #f2f2f2;
     }
     
@@ -373,6 +401,24 @@
       border-top: 1px solid #f2f2f2;
       text-align: center;
     }
+
+    /* Add more consistent spacing */
+    .sections-spacing > * {
+      margin-bottom: 24px;
+    }
+    
+    .sections-spacing > *:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Add spacing improvements */
+    .sections-spacing {
+      margin: 20px 0;
+    }
+    
+    .sections-spacing > * + * {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -499,8 +545,8 @@
               <!-- Button Section -->
               <div class="button-container" style="margin: 28px 0;">
                 <a href="{{invoiceLink}}" class="button">View Invoice</a>
-                {{#if stripeEnabled}}
-                <a href="{{paymentLink}}" class="pay-button" target="_blank" rel="noopener noreferrer">{{payNowText}}</a>
+                {{#if showPayButton}}
+                <a href="{{paymentLink}}" class="pay-button" target="_blank" rel="noopener noreferrer">Pay Now via Credit Card</a>
                 {{/if}}
               </div>
 

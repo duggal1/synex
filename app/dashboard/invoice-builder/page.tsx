@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { defaultStyles, stylePresets } from './styles';
 import { validateTemplate } from './utils';
+import { injectStyles } from './utils/styles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -27,9 +28,11 @@ import { ImageUploader } from './components/ImageUploader';
 import { TemplateSelector } from './components/TemplateSelector';
 
 const tableStyleClasses: Record<TableStyle, string> = {
-  simple: 'items-table-simple',
-  bordered: 'items-table-bordered',
-  striped: 'items-table-striped'
+  simple: 'items-table items-table-simple',
+  bordered: 'items-table items-table-bordered',
+  striped: 'items-table items-table-striped',
+  clean: 'items-table items-table-clean',
+  modern: 'items-table items-table-modern'
 };
 
 // Function to determine if a color is light or dark
@@ -146,6 +149,38 @@ const InvoiceBuilder = () => {
     const newLayout = { ...layout, [property]: value };
     setLayout(newLayout);
     updateTemplate(styles, newLayout);
+  };
+
+  const updateTableStyle = (template: string, style: TableStyle) => {
+    const tableClass = tableStyleClasses[style];
+    
+    // First remove all existing table style classes
+    template = template.replace(
+      /(class="[^"]*)(items-table-simple|items-table-bordered|items-table-striped|items-table-clean|items-table-modern)([^"]*")/g,
+      '$1$3'
+    );
+    
+    // Then add the new table style class
+    template = template.replace(
+      /(class="[^"]*items-table[^"]*")/g,
+      `$1 ${tableClass}`
+    );
+    
+    // Force table styling by adding inline styles
+    const tableStyles = {
+      simple: 'style="border-collapse:collapse;"',
+      bordered: 'style="border-collapse:collapse; border:1px solid #e5e7eb;"',
+      striped: 'style="border-collapse:collapse;"',
+      clean: 'style="border-collapse:collapse;"',
+      modern: 'style="border-collapse:collapse; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius:8px;"'
+    };
+    
+    template = template.replace(
+      /(<table[^>]*class="[^"]*items-table[^"]*"[^>]*)(>)/g,
+      `$1 ${tableStyles[style]}$2`
+    );
+    
+    return template;
   };
 
   const updateTemplate = (newStyles: InvoiceStyles, newLayout: InvoiceLayout) => {
@@ -293,7 +328,7 @@ const InvoiceBuilder = () => {
             updatedTemplate = updatedTemplate.replace(logoRegex, logoHtml);
           } else {
             // Try to add at the beginning of header
-            const headerStartRegex = /<td[^>]*class="[^"]*header-container[^"]*"[^>]*>\s*<table/i;
+            const headerStartRegex = /<td[^>]*class="header-container"[^>]*>\s*<table/i;
             if (headerStartRegex.test(updatedTemplate)) {
               updatedTemplate = updatedTemplate.replace(
                 headerStartRegex,
@@ -428,17 +463,77 @@ const InvoiceBuilder = () => {
       }
 
       // Update table style
-      const tableStyleClass = tableStyleClasses[newLayout.tableStyle];
-      updatedTemplate = updatedTemplate.replace(
-        /(class="[^"]*items-table[^"]*)(?:simple|bordered|striped)?([^"]*")/gi,
-        `$1 ${tableStyleClass}$2`
-      );
+      updatedTemplate = updateTableStyle(updatedTemplate, newLayout.tableStyle);
 
       setTemplate(updatedTemplate);
       setRefreshKey(prev => prev + 1);
     } catch (err) {
       console.error('Error updating template:', err);
     }
+  };
+
+  const handleContentChange = (field: string, value: string) => {
+    let newTemplate = template;
+    
+    const updateContent = (selectors: string[], newValue: string) => {
+      selectors.forEach(selector => {
+        const regex = new RegExp(selector, 'i');
+        if (regex.test(newTemplate)) {
+          newTemplate = newTemplate.replace(regex, (match) => {
+            return match.replace(/>([^<]*)</, `>${newValue}<`);
+          });
+        }
+      });
+    };
+    
+    switch (field) {
+      case 'companyName':
+        updateContent([
+          '<div[^>]*class="[^"]*party-name[^"]*"[^>]*>[^<]*<\/div>',
+          '<div[^>]*class="[^"]*company-name[^"]*"[^>]*>[^<]*<\/div>',
+          '<h2[^>]*>[^<]*<\/h2>'
+        ], value);
+        break;
+        
+      case 'clientName':
+        updateContent([
+          '<div[^>]*class="[^"]*client-name[^"]*"[^>]*>[^<]*<\/div>',
+          '<div[^>]*class="[^"]*party-name[^"]*"[^>]*>[^<]*<\/div>'
+        ], value);
+        break;
+        
+      case 'thankYouMessage':
+        updateContent([
+          '<p[^>]*class="[^"]*invoice-subtitle[^"]*"[^>]*>[^<]*<\/p>',
+          '<p[^>]*class="[^"]*thank-you[^"]*"[^>]*>[^<]*<\/p>'
+        ], value);
+        break;
+        
+      case 'note':
+        updateContent([
+          '<div[^>]*class="[^"]*note-content[^"]*"[^>]*>[^<]*<\/div>',
+          '<div[^>]*class="[^"]*invoice-note[^"]*"[^>]*>[^<]*<\/div>'
+        ], value);
+        break;
+    }
+    
+    setTemplate(newTemplate);
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const updateTemplateStyles = (styles: any) => {
+    const css = `
+      .main-table {
+        border: ${styles.borderWidth}px ${styles.borderStyle} ${styles.borderColor};
+        border-radius: ${styles.borderRadius}px;
+      }
+      .header-container { padding: ${styles.headerSpacing}px; }
+      .content-container { padding: ${styles.contentSpacing}px; }
+      .footer { padding-top: ${styles.footerSpacing}px; }
+      .items-table { border-style: ${styles.tableStyle === 'simple' ? 'none' : styles.tableStyle}; }
+    `;
+    
+    return injectStyles(template, css);
   };
 
   // Save changes
@@ -803,6 +898,96 @@ const InvoiceBuilder = () => {
             font-weight: bold;
           }
           }
+
+        /* Enhanced table styles */
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+        }
+        
+        .items-table-simple th,
+        .items-table-simple td {
+          border-bottom: 1px solid #eee;
+          padding: 12px;
+        }
+        
+        .items-table-bordered {
+          border: 1px solid #e5e7eb;
+        }
+        
+        .items-table-bordered th,
+        .items-table-bordered td {
+          border: 1px solid #e5e7eb;
+          padding: 12px;
+        }
+        
+        .items-table-striped tr:nth-child(even) {
+          background-color: #f9fafb;
+        }
+        
+        .items-table-striped th {
+          background-color: #f3f4f6;
+        }
+        
+        .items-table-clean th {
+          border-bottom: 2px solid #000;
+          padding: 12px;
+        }
+        
+        .items-table-clean td {
+          padding: 12px;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .items-table-modern {
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        
+        .items-table-modern th {
+          background-color: #f8fafc;
+          padding: 16px;
+          font-weight: 600;
+        }
+        
+        .items-table-modern td {
+          padding: 16px;
+          border-bottom: 1px solid #f1f5f9;
+        }
+        
+        /* Fix content rendering */
+        .party-section {
+          padding: 20px;
+          background-color: #f9fafb;
+          border-radius: 8px;
+          margin-bottom: 16px;
+        }
+        
+        .party-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: #111827;
+          margin-bottom: 4px;
+        }
+        
+        .party-detail {
+          color: #4b5563;
+          margin-bottom: 2px;
+        }
+
+        .note-section {
+          background-color: #f9fafb;
+          padding: 20px;
+          border-radius: 8px;
+          margin: 24px 0;
+        }
+        
+        .note-content {
+          color: #4b5563;
+          line-height: 1.5;
+        }
         </style>
       </head>
     <body>
@@ -815,8 +1000,8 @@ const InvoiceBuilder = () => {
     <div className="mx-auto px-4 py-6 max-w-[1600px] container">
       <h1 className="mb-6 font-bold text-2xl">Invoice Builder</h1>
       
-      <div className="gap-6 grid grid-cols-1 lg:grid-cols-5">
-        <div className="lg:col-span-4 h-screen">
+      <div className="gap-6 grid grid-cols-1 lg:grid-cols-12">
+        <div className="lg:col-span-8 h-screen">
           <Card className="h-full">
             <CardContent className="p-6 h-full">
               <div className="bg-white border rounded-md h-full overflow-hidden">
@@ -825,14 +1010,14 @@ const InvoiceBuilder = () => {
                   srcDoc={iframeContent}
                   className="border-0 w-full h-full min-h-[calc(100vh-200px)]"
                   title="Invoice Preview"
-                  style={{ minWidth: '1000px' }}
+                  style={{ minWidth: '600px', maxWidth: '800px', margin: '0 auto' }}
                 />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="lg:col-span-4 space-y-6">
           <Card>
             <CardContent className="p-6">
               <Tabs defaultValue="style">
@@ -844,13 +1029,43 @@ const InvoiceBuilder = () => {
             </TabsList>
 
                 <TabsContent value="template" className="space-y-4">
-                  <TemplateSelector 
-                    value="standard" 
-                    onChange={(templateId) => {
-                      // Here you would load the selected template
-                      toast.info(`Template ${templateId} selected`);
-                    }} 
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <h3 className="font-medium mb-2">Invoice.io Style</h3>
+                        <p className="text-sm text-gray-500">Clean, modern design inspired by Invoice.io</p>
+                        <img 
+                          src="https://placehold.co/300x200/dbeafe/3b82f6?text=Invoice.io" 
+                          alt="Invoice.io Template"
+                          className="mt-2 rounded-md w-full"
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <h3 className="font-medium mb-2">QuickBooks Style</h3>
+                        <p className="text-sm text-gray-500">Professional template inspired by QuickBooks</p>
+                        <img 
+                          src="https://placehold.co/300x200/dcfce7/22c55e?text=QuickBooks" 
+                          alt="QuickBooks Template"
+                          className="mt-2 rounded-md w-full"
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <h3 className="font-medium mb-2">FreshBooks Style</h3>
+                        <p className="text-sm text-gray-500">Modern design inspired by FreshBooks</p>
+                        <img 
+                          src="https://placehold.co/300x200/fef3c7/d97706?text=FreshBooks" 
+                          alt="FreshBooks Template"
+                          className="mt-2 rounded-md w-full"
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="style" className="space-y-4">
@@ -1272,6 +1487,8 @@ const InvoiceBuilder = () => {
                           <SelectItem value="simple">Simple</SelectItem>
                           <SelectItem value="bordered">Bordered</SelectItem>
                           <SelectItem value="striped">Striped</SelectItem>
+                          <SelectItem value="clean">Clean</SelectItem>
+                          <SelectItem value="modern">Modern</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

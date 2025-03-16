@@ -1,86 +1,541 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Invoice</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333333;
-        margin: 0;
-        padding: 0;
-      }
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      .header {
-        text-align: center;
-        padding: 20px 0;
-        background-color: #f8f9fa;
-      }
-      .logo {
-        max-width: 150px;
-        height: auto;
-      }
-      .content {
-        padding: 30px 0;
-      }
-      .button {
-        display: inline-block;
-        padding: 12px 24px;
-        background-color: #0066cc;
-        color: #ffffff !important;
-        text-decoration: none;
-        border-radius: 4px;
-        font-weight: bold;
-        margin: 20px 0;
-      }
-      .button:hover {
-        background-color: #0052a3;
-      }
-      .footer {
-        text-align: center;
-        padding: 20px;
-        background-color: #f8f9fa;
-        font-size: 12px;
-        color: #666666;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="content">
-        <h2>Invoice for jan</h2>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice</title>
+  <style>
+    /* Reset and base styles with Gmail compatibility */
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      color: #171717;
+      background-color: #fafafa;
+      -webkit-text-size-adjust: 100%;
+    }
+    
+    table {
+      border-collapse: collapse;
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
+    }
+    
+    /* Container styles */
+    .main-table {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    
+    .header-container {
+      background-color: #000000;
+      color: #ffffff;
+      padding: 40px;
+      border-radius: 0;
+    }
+    
+    .content-container {
+      padding: 40px;
+    }
+    
+    /* Header styles */
+    .invoice-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0;
+      padding: 0;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+    
+    .invoice-subtitle {
+      margin: 4px 0 0 0;
+      padding: 0;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+    
+    .meta-row {
+      margin-top: 20px;
+    }
+    
+    .meta-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+    }
+    
+    .meta-value {
+      font-size: 15px;
+      color: #ffffff;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-top: 8px;
+      text-transform: uppercase;
+    }
+    
+    .status-paid {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    
+    .status-pending {
+      background-color: rgba(250, 204, 21, 0.15);
+      color: #facc15;
+    }
+    
+    .status-overdue {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+    
+    .status-urgent {
+      background-color: rgba(250, 204, 21, 0.15);
+      color: #facc15;
+    }
+    
+    .status-normal {
+      background-color: rgba(161, 161, 170, 0.15);
+      color: #a1a1aa;
+    }
+    
+    /* Party section styles */
+    .parties-container {
+      margin-bottom: 40px;
+    }
+    
+    .party-section {
+      padding: 24px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      box-shadow: none;
+      border: 1px solid #f2f2f2;
+      transition: all 0.2s ease;
+    }
+    
+    .party-section:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    
+    .party-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #71717a;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    
+    .party-name {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 4px;
+      color: #171717;
+      letter-spacing: -0.01em;
+    }
+    
+    .party-detail {
+      font-size: 14px;
+      color: #525252;
+      line-height: 1.4;
+    }
+    
+    /* Items table styles */
+    .items-table {
+      width: 100%;
+      margin-bottom: 40px;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: none;
+      border: 1px solid #f2f2f2;
+    }
+    
+    .items-table th {
+      text-align: left;
+      padding: 14px 20px;
+      background-color: #f5f5f5;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: #71717a;
+      border: none;
+    }
+    
+    .items-table td {
+      padding: 18px 20px;
+      border-bottom: 1px solid #f2f2f2;
+      font-size: 14px;
+      color: #171717;
+      vertical-align: top;
+    }
+    
+    .items-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* Summary table styles */
+    .summary-container {
+      margin-bottom: 40px;
+    }
+    
+    .summary-table {
+      width: 100%;
+      max-width: 280px;
+      margin-left: auto;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      padding: 20px;
+      border: 1px solid #f2f2f2;
+    }
+    
+    .summary-table td {
+      padding: 8px 0;
+      font-size: 14px;
+    }
+    
+    .summary-label {
+      color: #525252;
+    }
+    
+    .summary-value {
+      text-align: right;
+      font-weight: 500;
+      color: #171717;
+    }
+    
+    .total-row td {
+      padding-top: 16px;
+      border-top: 1px solid #e5e5e5;
+      font-size: 16px;
+      font-weight: 600;
+      color: #000000;
+    }
+    
+    .total-label {
+      color: #171717;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    
+    /* Note section styles */
+    .note-section {
+      padding: 24px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      margin-bottom: 40px;
+      border: 1px solid #f2f2f2;
+    }
+    
+    .note-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #171717;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+    
+    .note-content {
+      color: #525252;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    /* Button styles */
+    .button-container {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .button {
+      display: inline-block;
+      padding: 14px 28px;
+      background-color: #000000;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 14px;
+      text-align: center;
+      mso-padding-alt: 14px 28px;
+      transition: all 0.2s ease;
+      letter-spacing: 0.01em;
+    }
 
-        <p>Dear User Whats up jan,</p>
+    .button:hover {
+      background-color: #171717;
+      transform: translateY(-1px);
+    }
+    
+    .pay-button {
+      display: inline-block;
+      padding: 14px 28px;
+      background-color: #10b981;
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 14px;
+      text-align: center;
+      mso-padding-alt: 14px 28px;
+      margin-left: 16px;
+      transition: all 0.2s ease;
+      letter-spacing: 0.01em;
+    }
 
-        <p>
-          I hope this email finds you well. Please find attached your invoice
-          attached below
-        </p>
+    .pay-button:hover {
+      background-color: #059669;
+      transform: translateY(-1px);
+    }
+    
+    /* Footer styles */
+    .footer {
+      text-align: center;
+      color: #a3a3a3;
+      font-size: 13px;
+      border-top: 1px solid #f2f2f2;
+      padding-top: 32px;
+    }
+    
+    /* Responsive styles */
+    @media screen and (max-width: 600px) {
+      .header-container, .content-container {
+        padding: 24px;
+      }
+      
+      .items-table th {
+        display: none;
+      }
+      
+      .items-table td {
+        display: block;
+        text-align: right;
+        padding: 10px 16px;
+        position: relative;
+      }
+      
+      .items-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 16px;
+        font-weight: 600;
+        font-size: 11px;
+        color: #71717a;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      
+      .summary-table {
+        max-width: 100%;
+      }
 
-        <p>Invoice Details:</p>
-        <ul>
-          <li>Invoice Number: xyz</li>
-          <li>Due Date: xyz</li>
-          <li>Total Amount: xyz</li>
-        </ul>
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
 
-        <p>You can download your invoice by clicking the button below:</p>
+      .pay-button {
+        margin-left: 0;
+        margin-top: 16px;
+      }
+    }
+    
+    .payment-info {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      text-align: center;
+      border: 1px solid #f2f2f2;
+    }
+    
+    .payment-terms {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #f2f2f2;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <table class="main-table" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td style="padding: 32px;">
+        <!-- Invoice Container -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <!-- Header Section -->
+          <tr>
+            <td class="header-container" bgcolor="#000000">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <h1 class="invoice-title">{{invoiceName}}</h1>
+                    <p class="invoice-subtitle">Thank you for your business</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-top: 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr class="meta-row">
+                        <td>
+                          <span class="meta-label">Invoice #</span><br>
+                          <span class="meta-value">{{invoiceNumber}}</span>
+                        </td>
+                        <td>
+                          <span class="meta-label">Issue Date</span><br>
+                          <span class="meta-value">{{formattedDate}}</span>
+                        </td>
+                        <td>
+                          <span class="meta-label">Due Date</span><br>
+                          <span class="meta-value">{{formattedDueDate}}</span>
+                        </td>
+                        <td align="right">
+                          {{#if isPaid}}
+                          <div class="status-badge status-paid">Paid</div>
+                          {{else}}
+                            {{#if isOverdue}}
+                            <div class="status-badge status-overdue">Overdue by {{daysRemaining}} days</div>
+                            {{else}}
+                            <div class="status-badge status-{{urgencyLevel}}">Due in {{daysRemaining}} days</div>
+                            {{/if}}
+                          {{/if}}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content Section -->
+          <tr>
+            <td class="content-container">
+              <!-- Parties Section -->
+              <table class="parties-container" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="48%" valign="top">
+                    <div class="party-section">
+                      <div class="party-title">From</div>
+                      <div class="party-name">{{fromName}}</div>
+                      <div class="party-detail">{{fromEmail}}</div>
+                      <div class="party-detail">{{fromAddress}}</div>
+                    </div>
+                  </td>
+                  <td width="4%"></td>
+                  <td width="48%" valign="top">
+                    <div class="party-section">
+                      <div class="party-title">Bill To</div>
+                      <div class="party-name">{{clientName}}</div>
+                      <div class="party-detail">{{clientEmail}}</div>
+                      <div class="party-detail">{{clientAddress}}</div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Items Table -->
+              <table class="items-table" cellpadding="0" cellspacing="0" border="0">
+                <thead>
+                  <tr>
+                    <th width="50%">Description</th>
+                    <th>Quantity</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-label="Description">{{invoiceItemDescription}}</td>
+                    <td data-label="Quantity">{{invoiceItemQuantity}}</td>
+                    <td data-label="Rate">{{formattedRate}}</td>
+                    <td data-label="Amount" style="font-weight: 500;">{{formattedItemTotal}}</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <!-- Summary Section -->
+              <table class="summary-container" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="right">
+                    <table class="summary-table" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td class="summary-label">Subtotal</td>
+                        <td class="summary-value">{{formattedTotal}}</td>
+                      </tr>
+                      <tr class="total-row">
+                        <td class="total-label">Total Due</td>
+                        <td class="summary-value">{{formattedTotal}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Note Section -->
+              <div class="note-section">
+                <div class="note-title">Note</div>
+                <div class="note-content">{{note}}</div>
+              </div>
+              
+              <!-- Button Section -->
+              <div class="button-container" style="margin: 28px 0;">
+                <a href="{{invoiceLink}}" class="button">View Invoice</a>
+                {{#if showPayButton}}
+                <a href="{{paymentLink}}" class="pay-button" target="_blank" rel="noopener noreferrer">Pay Now via Credit Card</a>
+                {{/if}}
+              </div>
 
-        <a href="xyz" class="button">Download Invoice</a>
-
-        <p>
-          If you have any questions or concerns, please don't hesitate to
-          contact us.
-        </p>
-
-        <p>Thank you for your business!</p>
-      </div>
-    </div>
-  </body>
+              <!-- Payment Information -->
+              <div class="payment-info">
+                {{#if stripeEnabled}}
+                <p style="font-size: 14px; color: #525252; margin: 0;">
+                  You can pay this invoice securely online via credit card
+                </p>
+                {{else}}
+                <p style="font-size: 14px; color: #525252; margin: 0;">
+                  Please contact us for payment instructions
+                </p>
+                {{/if}}
+              </div>
+              
+              <!-- Add payment terms section -->
+              <div class="payment-terms">
+                <p style="color: #737373; font-size: 13px; margin: 0;">
+                  Payment Terms: Due {{#if gracePeriod}}within {{gracePeriod}} days{{else}}upon receipt{{/if}}
+                </p>
+              </div>
+              
+              <!-- Footer -->
+              <div class="footer">
+                <p>Thank you for your business!</p>
+                {{#if hasOnlinePayment}}
+                <p style="color: #a3a3a3; font-size: 12px;">This invoice can be paid online securely via credit card.</p>
+                {{/if}}
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
 </html>

@@ -1,5 +1,5 @@
 export type LogoPosition = 'left' | 'center' | 'right';
-export type TableStyle = 'simple' | 'bordered' | 'striped';
+export type TableStyle = 'simple' | 'bordered' | 'striped' | 'clean' | 'modern';
 export type StylePresetName = 'modern' | 'classic' | 'minimal' | 'bold' | 'colorful';
 export type BorderStyle = 'none' | 'solid' | 'dashed' | 'dotted' | 'double';
 

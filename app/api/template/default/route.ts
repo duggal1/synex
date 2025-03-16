@@ -37,9 +37,32 @@ export async function GET() {
     }
 
     // Only remove comments, preserve structure
-    const cleanTemplate = template
+    let cleanTemplate = template
       .replace(/<!--[\s\S]*?-->/g, '');
-    
+
+    // Add default values for builder preview
+    const defaultValues = {
+      invoiceName: 'Invoice #12345',
+      fromName: 'Your Company Name',
+      clientName: 'Client Name',
+      note: 'Add your invoice note here...',
+      invoiceNumber: '12345',
+      formattedDate: new Date().toLocaleDateString(),
+      formattedDueDate: new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString(),
+      invoiceItemDescription: 'Sample Item',
+      invoiceItemQuantity: '1',
+      formattedRate: '$100.00',
+      formattedItemTotal: '$100.00',
+      formattedTotal: '$100.00',
+      urgencyLevel: 'normal',
+      daysRemaining: '7'
+    };
+
+    // Replace placeholders with default values
+    Object.entries(defaultValues).forEach(([key, value]) => {
+      cleanTemplate = cleanTemplate.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    });
+
     return new NextResponse(cleanTemplate, {
       headers: { 
         'Content-Type': 'text/html; charset=utf-8',
