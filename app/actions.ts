@@ -65,14 +65,14 @@ export async function createInvoice(prevState: any, formData: FormData) {
 
   // Handle nullable fields with default values
   const note = submission.value.note || "";
-  const currency = (submission.value.currency || "USD") as CurrencyType;
+  const currency = (submission.value.currency || "USD") as "USD" | "EUR";
 
   const data = await prisma.invoice.create({
     data: {
       clientAddress: submission.value.clientAddress,
       clientEmail: submission.value.clientEmail,
       clientName: submission.value.clientName,
-      currency,
+      currency: currency,
       date: submission.value.date, // storing invoice date as a string (or Date, as per your model)
       dueDate: dueDateNumber,       // storing due date as seconds (number)
       fromAddress: submission.value.fromAddress,

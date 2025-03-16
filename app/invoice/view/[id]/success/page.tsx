@@ -38,6 +38,9 @@ export default async function PaymentSuccessPage({
     notFound();
   }
 
+  // Ensure we have a valid currency
+  const currency = (invoice.currency || "USD") as "USD" | "EUR";
+
   // Verify the session with Stripe
   if (invoice.status !== "PAID") {
     try {
@@ -94,14 +97,17 @@ export default async function PaymentSuccessPage({
                 <span className="font-medium">
                   {formatCurrency({
                     amount: invoice.total,
-                    currency: invoice.currency,
+                    currency: currency,
                   })}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-neutral-400">Payment Date</span>
                 <span className="font-medium">
-                  {new Date().toLocaleDateString()}
+                  {new Intl.DateTimeFormat('en-US', {
+                    dateStyle: 'long',
+                    timeStyle: 'short'
+                  }).format(new Date())}
                 </span>
               </div>
             </div>

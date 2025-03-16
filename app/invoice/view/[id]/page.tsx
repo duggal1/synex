@@ -49,7 +49,7 @@ export default async function InvoicePage({ params }: { params: { id: string }; 
   const canPayOnline = !isPaid && hasStripe && invoice.paymentLink;
 
   // Handle nullable fields with default values
-  const currency = (invoice.currency || "USD") as CurrencyType;
+  const currency = (invoice.currency || "USD") as "USD" | "EUR";
   const invoiceNote = invoice.note || "";
   const fromName = invoice.fromName || "Sender";
 

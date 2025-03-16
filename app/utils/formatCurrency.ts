@@ -3,10 +3,16 @@ import type { CurrencyType, FormattedCurrency } from "../types/currency";
 export function formatCurrency({ 
   amount, 
   currency = "USD" 
-}: Partial<FormattedCurrency> & { amount: number }): string {
+}: { 
+  amount: number;
+  currency?: CurrencyType;
+}): string {
+  // Ensure currency is always USD or EUR
+  const validCurrency = currency === "EUR" ? "EUR" : "USD";
+  
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency as CurrencyType,
+    currency: validCurrency,
     minimumFractionDigits: 2,
   }).format(amount);
 }
