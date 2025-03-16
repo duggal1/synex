@@ -263,7 +263,7 @@ export default function UpgradePage() {
             <div className="px-8 md:px-12 py-10">
               {/* Status Badge */}
               <div className="flex justify-center mb-10">
-                <Badge className="bg-black/50 hover:bg-green-950/20 px-4 py-2 border border-green-950/80 rounded-full text-green-800 transition-colors duration-300">
+                <Badge className="bg-black/50 hover:bg-green-950/90 px-4 py-2 border border-green-900 rounded-full text-green-600 transition-colors duration-300">
                   <div className="flex items-center gap-2">
              
                     <span className="font-medium text-sm">Active Subscription</span>

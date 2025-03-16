@@ -5,7 +5,22 @@ import { requireUser } from "../utils/hooks";
 import { formatCurrency } from "../utils/formatCurrency";
 import { cn } from "@/lib/utils";
 
-async function getData(userId: string) {
+interface DashboardMetrics {
+  totalRevenue: number;
+  paidAmount: number;
+  pendingAmount: number;
+  totalInvoices: number;
+  paidCount: number;
+  pendingCount: number;
+  revenueGrowth: number;
+  weeklyGrowth: number;
+  dailyAverage: number;
+  dailyGrowth: number;
+  lastSevenDaysPaid: number;
+  paidGrowth: number;  // Added this field
+}
+
+async function getData(userId: string): Promise<DashboardMetrics> {
   // Get time periods
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -31,54 +46,37 @@ async function getData(userId: string) {
     },
   });
 
-  // Calculate metrics
+  // Calculate metrics - only count PAID invoices for revenue
   const metrics = invoices.reduce((acc, invoice) => {
-    // Total revenue
-    acc.totalRevenue += invoice.total;
+    // Only add to revenue metrics if invoice is PAID
+    if (invoice.status === "PAID") {
+      // Total revenue (only from paid invoices)
+      acc.totalRevenue += invoice.total;
 
-    // This month's metrics
-    if (invoice.createdAt >= firstDayOfMonth && invoice.createdAt <= lastDayOfMonth) {
-      acc.thisMonthTotal += invoice.total;
-      if (invoice.status === "PAID") {
+      // This month's paid metrics
+      if (invoice.paidAt && invoice.paidAt >= firstDayOfMonth && invoice.paidAt <= lastDayOfMonth) {
         acc.thisMonthPaid += invoice.total;
       }
-    }
 
-    // Last month's metrics
-    if (invoice.createdAt >= firstDayOfLastMonth && invoice.createdAt <= lastDayOfLastMonth) {
-      acc.lastMonthTotal += invoice.total;
-      if (invoice.status === "PAID") {
+      // Last month's paid metrics
+      if (invoice.paidAt && invoice.paidAt >= firstDayOfLastMonth && invoice.paidAt <= lastDayOfLastMonth) {
         acc.lastMonthPaid += invoice.total;
       }
-    }
 
-    // Last 7 days metrics
-    if (invoice.createdAt >= sevenDaysAgo) {
-      acc.lastSevenDaysTotal += invoice.total;
-      if (invoice.status === "PAID") {
+      // Last 7 days paid metrics
+      if (invoice.paidAt && invoice.paidAt >= sevenDaysAgo) {
         acc.lastSevenDaysPaid += invoice.total;
       }
-      acc.lastSevenDaysCount++;
-    }
 
-    // Previous 7 days metrics (7-14 days ago)
-    if (invoice.createdAt >= fourteenDaysAgo && invoice.createdAt < sevenDaysAgo) {
-      acc.previousSevenDaysTotal += invoice.total;
-      if (invoice.status === "PAID") {
+      // Previous 7 days paid metrics
+      if (invoice.paidAt && invoice.paidAt >= fourteenDaysAgo && invoice.paidAt < sevenDaysAgo) {
         acc.previousSevenDaysPaid += invoice.total;
       }
-      acc.previousSevenDaysCount++;
-    }
 
-    // Paid and pending counts
-    if (invoice.status === "PAID") {
       acc.paidAmount += invoice.total;
       acc.paidCount++;
-
-      // For now, assume all paid invoices are manual payments
-      // Once the schema is updated, we can track by payment method
-      acc.manualPaymentAmount += invoice.total;
     } else {
+      // Track pending amounts separately
       acc.pendingAmount += invoice.total;
       acc.pendingCount++;
     }
@@ -86,65 +84,49 @@ async function getData(userId: string) {
     return acc;
   }, {
     totalRevenue: 0,
-    thisMonthTotal: 0,
     thisMonthPaid: 0,
-    lastMonthTotal: 0,
     lastMonthPaid: 0,
-    lastSevenDaysTotal: 0,
     lastSevenDaysPaid: 0,
-    lastSevenDaysCount: 0,
-    previousSevenDaysTotal: 0,
     previousSevenDaysPaid: 0,
-    previousSevenDaysCount: 0,
     paidAmount: 0,
     paidCount: 0,
     pendingAmount: 0,
     pendingCount: 0,
-    manualPaymentAmount: 0,
-    onlinePaymentAmount: 0,
   });
 
-  // Calculate growth rates
-  const revenueGrowth = metrics.lastMonthTotal === 0 ? 100 :
-    Math.round(((metrics.thisMonthTotal - metrics.lastMonthTotal) / metrics.lastMonthTotal) * 100);
+  // Calculate growth rates based on paid amounts only
+  const revenueGrowth = metrics.lastMonthPaid === 0 ? 0 :
+    Math.round(((metrics.thisMonthPaid - metrics.lastMonthPaid) / metrics.lastMonthPaid) * 100);
 
-  const weeklyGrowth = metrics.previousSevenDaysTotal === 0 ? 100 :
-    Math.round(((metrics.lastSevenDaysTotal - metrics.previousSevenDaysTotal) / metrics.previousSevenDaysTotal) * 100);
+  const weeklyGrowth = metrics.previousSevenDaysPaid === 0 ? 0 :
+    Math.round(((metrics.lastSevenDaysPaid - metrics.previousSevenDaysPaid) / metrics.previousSevenDaysPaid) * 100);
 
-  const paidGrowth = metrics.paidCount === 0 ? 0 : 
-    Math.round((metrics.paidCount / (metrics.paidCount + metrics.pendingCount)) * 100);
-
-  const totalInvoices = metrics.paidCount + metrics.pendingCount;
-  const invoiceGrowth = totalInvoices > 0 ? 100 : 0;
-
-  // Calculate daily averages
-  const dailyAverage = Math.round(metrics.lastSevenDaysTotal / 7);
-  const previousDailyAverage = Math.round(metrics.previousSevenDaysTotal / 7);
-  const dailyGrowth = previousDailyAverage === 0 ? 100 :
+  // Calculate daily average from paid invoices
+  const dailyAverage = Math.round(metrics.lastSevenDaysPaid / 7);
+  const previousDailyAverage = Math.round(metrics.previousSevenDaysPaid / 7);
+  const dailyGrowth = previousDailyAverage === 0 ? 0 :
     Math.round(((dailyAverage - previousDailyAverage) / previousDailyAverage) * 100);
 
-  // Calculate online payment metrics
-  const onlinePaymentPercentage = metrics.paidAmount === 0 ? 0 :
-    Math.round((metrics.onlinePaymentAmount / metrics.paidAmount) * 100);
+  // Calculate paid growth rate
+  const paidGrowth = metrics.pendingCount === 0 ? 100 :
+    Math.round((metrics.paidCount / (metrics.paidCount + metrics.pendingCount)) * 100);
 
   return {
+    // Revenue metrics (only from paid invoices)
     totalRevenue: metrics.totalRevenue,
     paidAmount: metrics.paidAmount,
+    // Pending metrics (separate from revenue)
     pendingAmount: metrics.pendingAmount,
-    totalInvoices,
+    totalInvoices: metrics.paidCount + metrics.pendingCount,
     paidCount: metrics.paidCount,
     pendingCount: metrics.pendingCount,
+    // Growth metrics (based on paid amounts)
     revenueGrowth,
     weeklyGrowth,
-    paidGrowth,
-    invoiceGrowth,
     dailyAverage,
     dailyGrowth,
-    lastSevenDaysTotal: metrics.lastSevenDaysTotal,
     lastSevenDaysPaid: metrics.lastSevenDaysPaid,
-    onlinePaymentAmount: metrics.onlinePaymentAmount,
-    manualPaymentAmount: metrics.manualPaymentAmount,
-    onlinePaymentPercentage,
+    paidGrowth,  // Add this to the returned object
   };
 }
 
@@ -177,7 +159,7 @@ export async function DashboardBlocks() {
       title: "Daily Average",
       value: formatCurrency({ amount: data.dailyAverage, currency: "USD" }),
       description: `${data.dailyGrowth}% vs last week`,
-      subtext: `${formatCurrency({ amount: data.lastSevenDaysTotal, currency: "USD" })} past 7 days`,
+      subtext: `${formatCurrency({ amount: data.lastSevenDaysPaid, currency: "USD" })} past 7 days`,
       icon: Users,
       accentColor: "from-blue-600 to-cyan-600",
       textColor: "text-blue-600",
