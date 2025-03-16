@@ -117,13 +117,13 @@ export async function createInvoice(prevState: any, formData: FormData) {
               name: submission.value.invoiceName,
               description: `Invoice #${submission.value.invoiceNumber}`
             },
-            unit_amount: computedTotal * 100
+            unit_amount: Math.round(computedTotal * 100) // Ensure amount is in cents and rounded
           },
           quantity: 1
         }],
         mode: 'payment',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/invoice/view/${data.id}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/invoice/view/${data.id}`,
+        success_url: `https://synexai.in/invoice/view/${data.id}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `https://synexai.in/invoice/view/${data.id}`,
       });
 
       paymentLink = paymentSession.url;
@@ -201,7 +201,7 @@ export async function createInvoice(prevState: any, formData: FormData) {
       }),
       note,
       invoiceLink:
-        process.env.NODE_ENV !== "production"
+        process.env.NODE_ENV === "development"
           ? `http://localhost:3000/invoice/view/${data.id}`
           : `https://synexai.in/invoice/view/${data.id}`,
       hasOnlinePayment,

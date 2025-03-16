@@ -15,7 +15,11 @@ export default async function InvoicePage({ params }: { params: { id: string }; 
     include: {
       User: {
         select: {
-          stripeSettings: true,
+          stripeSettings: {
+            select: {
+              isConnected: true
+            }
+          }
         },
       },
     },
@@ -41,7 +45,8 @@ export default async function InvoicePage({ params }: { params: { id: string }; 
   const isOverdue = !isPaid && dueDate < new Date();
 
   // Check if the user has Stripe connected
-  const hasStripe = invoice.User?.stripeSettings?.isConnected;
+  const hasStripe = Boolean(invoice.User?.stripeSettings?.isConnected);
+  const canPayOnline = !isPaid && hasStripe && invoice.paymentLink;
 
   // Handle nullable fields with default values
   const currency = (invoice.currency || "USD") as CurrencyType;
@@ -203,20 +208,13 @@ export default async function InvoicePage({ params }: { params: { id: string }; 
           {/* Footer */}
           <CardFooter className="pt-4 pb-12 px-8 relative z-10">
             <div className="w-full">
-              {!isPaid && hasStripe && (
-                <form action={async (formData: FormData) => {
-                  const result = await createStripeCheckoutSession(invoice.id);
-                  if (result.url) {
-                    window.location.href = result.url;
-                  }
-                }}>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white rounded-xl py-7 text-base font-medium transition-all duration-200 shadow-lg shadow-violet-900/20"
-                  >
-                    Pay Now
-                  </Button>
-                </form>
+              {canPayOnline && invoice.paymentLink && (
+                <Button 
+                  onClick={() => window.location.href = invoice.paymentLink!}
+                  className="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white rounded-xl py-7 text-base font-medium transition-all duration-200 shadow-lg shadow-violet-900/20"
+                >
+                  Pay Now
+                </Button>
               )}
               {isPaid && (
                 <div className="font-medium text-emerald-400 text-center p-5 rounded-xl bg-zinc-900/30 backdrop-blur-sm border border-emerald-900/50 shadow-lg">

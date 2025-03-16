@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/app/utils/db";
+import Stripe from "stripe";
 import { CheckCircle } from "lucide-react";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,31 +17,51 @@ export default async function PaymentSuccessPage({
   const { id } = params;
   const { session_id } = searchParams;
 
-  // If no session ID is provided, redirect to the invoice page
-  if (!session_id) {
-    redirect(`/invoice/view/${id}`);
+  // Add additional validation for production
+  if (!session_id || !id) {
+    redirect(`https://synexai.in/invoice/view/${id}`);
   }
 
-  // Get the invoice details
+  // Get the invoice details with stripe settings
   const invoice = await prisma.invoice.findUnique({
     where: { id },
+    include: {
+      User: {
+        select: {
+          stripeSettings: true
+        }
+      }
+    }
   });
 
-  if (!invoice) {
+  if (!invoice || !invoice.User?.stripeSettings?.stripeSecretKey) {
     notFound();
   }
 
-  // If the invoice is not paid yet, update it
+  // Verify the session with Stripe
   if (invoice.status !== "PAID") {
-    await prisma.invoice.update({
-      where: { id },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        stripeCheckoutSessionId: session_id,
-        paymentMethod: "STRIPE", // Track payment method
-      },
-    });
+    try {
+      const stripe = new Stripe(invoice.User.stripeSettings.stripeSecretKey, {
+        apiVersion: "2025-02-24.acacia"
+      });
+      
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      
+      if (session.payment_status === "paid") {
+        await prisma.invoice.update({
+          where: { id },
+          data: {
+            status: "PAID",
+            paidAt: new Date(),
+            stripeCheckoutSessionId: session_id,
+            paymentMethod: "STRIPE",
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying Stripe session:", error);
+      redirect(`https://synexai.in/invoice/view/${id}`);
+    }
   }
 
   return (
