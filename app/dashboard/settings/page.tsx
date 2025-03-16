@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { deleteAccount, getStripeSettings, saveStripeKeys } from "./actions";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -61,7 +62,8 @@ export default function SettingsPage() {
       const result = await deleteAccount();
       if (result.success) {
         toast.success("Account deleted successfully");
-        router.push("/");
+        await signOut({ redirect: false });
+        router.push("/login");
       } else {
         throw new Error(result.error);
       }
@@ -209,4 +211,4 @@ export default function SettingsPage() {
       </Card>
     </div>
   );
-} 
+}
