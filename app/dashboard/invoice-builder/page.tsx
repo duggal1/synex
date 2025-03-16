@@ -1,5 +1,9 @@
 'use client';
 
+
+// imports 
+
+
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { defaultStyles, stylePresets } from './styles';
@@ -16,9 +20,7 @@ import { SpacingControl } from './components/SpacingControl';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-
-import { Check, Copy, Download, Eye, Info, Plus, Save, Trash } from 'lucide-react';
+import { Save } from 'lucide-react';
 import type { InvoiceStyles, InvoiceLayout, TableStyle, StylePresetName } from './types';
 import { FontSelector } from './components/FontSelector';
 import { BorderStyleSelector } from './components/BorderStyleSelector';
