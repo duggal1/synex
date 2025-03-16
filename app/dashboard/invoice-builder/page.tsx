@@ -17,8 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 import { Check, Copy, Download, Eye, Info, Plus, Save, Trash } from 'lucide-react';
 import type { InvoiceStyles, InvoiceLayout, TableStyle, StylePresetName } from './types';
 import { FontSelector } from './components/FontSelector';
