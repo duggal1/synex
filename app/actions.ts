@@ -38,6 +38,22 @@ export async function createInvoice(prevState: any, formData: FormData) {
     return submission.reply();
   }
 
+  // Check subscription status and invoice count
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      subscription: true
+    }
+  });
+
+  if (!user) throw new Error("User not found");
+
+  // Block creation if user has reached limit and isn't subscribed
+  const isSubscribed = user.subscription?.status === "ACTIVE";
+  if (!isSubscribed && user.invoiceCount >= 1) {
+    throw new Error("Free invoice limit reached. Please upgrade to create more invoices.");
+  }
+
   // Convert invoice date string to a Date object.
   const invoiceDateObj = new Date(submission.value.date);
   if (isNaN(invoiceDateObj.getTime())) {
@@ -89,6 +105,14 @@ export async function createInvoice(prevState: any, formData: FormData) {
       userId: session.user?.id,
     },
   });
+
+  // Increment invoice count for free users
+  if (!isSubscribed) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { invoiceCount: (user.invoiceCount || 0) + 1 }
+    });
+  }
 
   // Check if user has Stripe enabled and get their settings
   const userStripeSettings = await prisma.stripeSettings.findUnique({

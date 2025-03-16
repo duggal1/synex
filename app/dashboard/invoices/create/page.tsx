@@ -1,33 +1,33 @@
 import { CreateInvoice } from "@/app/components/CreateInvoice";
-import prisma from "@/app/utils/db";
+import { Card } from "@/components/ui/card";
 import { requireUser } from "@/app/utils/hooks";
-import { redirect } from "next/navigation";
+import prisma from "@/app/utils/db";
 
-async function getUserData(userId: string) {
-  const data = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: {
-      firstName: true,
-      lastName: true,
-      address: true,
-      email: true,
-    },
+export default async function CreateInvoicePage() {
+  const session = await requireUser();
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      subscription: {
+        select: { status: true }
+      }
+    }
   });
 
-  return data;
-}
+  if (!user) {
+    throw new Error("User not found");
+  }
 
-export default async function InvoiceCreationRoute() {
-  const session = await requireUser();
-  const data = await getUserData(session.user?.id as string);
   return (
-    <CreateInvoice
-      lastName={data?.lastName as string}
-      address={data?.address as string}
-      email={data?.email as string}
-      firstName={data?.firstName as string}
-    />
+    <Card className="border-none shadow-none">
+      <CreateInvoice 
+        firstName={user.firstName || ""}
+        lastName={user.lastName || ""}
+        email={user.email || ""}
+        address={user.address || ""}
+        invoiceCount={user.invoiceCount || 0}
+        isSubscribed={user.subscription?.status === "ACTIVE"}
+      />
+    </Card>
   );
 }
