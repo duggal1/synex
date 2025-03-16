@@ -32,7 +32,7 @@ export default function Onboarding() {
   });
   return (
     <div className="flex justify-center items-center w-screen min-h-screen">
-      <div className="bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] -z-10 absolute inset-0 bg-white bg-[size:6rem_4rem] w-full h-full">
+      <div className="bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] -z-10 absolute inset-0 bg-black bg-[size:6rem_4rem] w-full h-full">
         <div className="top-0 right-0 bottom-0 left-0 absolute bg-[radial-gradient(circle_500px_at_50%_200px,#000000,transparent)]"></div>
       </div>
       <Card className="mx-auto max-w-sm">
