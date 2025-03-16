@@ -1,12 +1,13 @@
+
+
+
 import { notFound } from "next/navigation";
 import prisma from "@/app/utils/db";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, Clock, Calendar, User, Mail, MapPin, Briefcase } from "lucide-react";
-import { createStripeCheckoutSession } from "@/app/actions/stripe";
-import type { CurrencyType } from "@/app/types/currency";
+import { CheckCircle2, Clock, Calendar, User, Mail, MapPin, Briefcase, ExternalLink } from "lucide-react";
 
 
 export default async function InvoicePage({ params }: { params: { id: string }; searchParams: { [key: string]: string | string[] | undefined } }) {
@@ -53,9 +54,38 @@ export default async function InvoicePage({ params }: { params: { id: string }; 
   const invoiceNote = invoice.note || "";
   const fromName = invoice.fromName || "Sender";
 
+  const mailtoLink = `mailto:${invoice.fromEmail}?subject=Re: Invoice #${invoice.invoiceNumber}&body=Regarding invoice ${invoice.invoiceNumber}`;
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#030303] p-4 md:p-8">
-      <div className="w-full max-w-4xl">
+    <div className="flex items-center justify-center min-h-screen bg-black p-4 md:p-8">
+      <div className="w-full max-w-4xl space-y-6">
+        {/* Contact Sender Card */}
+        <Card className="bg-black/40 border border-zinc-800/30 shadow-2xl rounded-2xl overflow-hidden relative backdrop-blur-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-blue-500/5"></div>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-violet-500/10">
+                  <Mail className="w-4 h-4 text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-zinc-400 text-sm">Contact the sender</p>
+                  <p className="text-white font-medium">{invoice.fromEmail}</p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                className="hover:bg-violet-500/10 text-violet-400"
+                onClick={() => window.open(mailtoLink, '_blank')}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Send Email
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Main Invoice Card */}
         <Card className="bg-black border border-zinc-800/30 shadow-2xl rounded-2xl overflow-hidden relative backdrop-blur-xl">
           {/* Gradient effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-blue-500/5"></div>
@@ -207,7 +237,7 @@ export default async function InvoicePage({ params }: { params: { id: string }; 
           
           {/* Footer */}
           <CardFooter className="pt-4 pb-12 px-8 relative z-10">
-            <div className="w-full">
+            <div className="w-full space-y-4">
               {canPayOnline && invoice.paymentLink && (
                 <Button 
                   onClick={() => window.location.href = invoice.paymentLink!}
@@ -217,15 +247,39 @@ export default async function InvoicePage({ params }: { params: { id: string }; 
                 </Button>
               )}
               {isPaid && (
-                <div className="font-medium text-emerald-400 text-center p-5 rounded-xl bg-zinc-900/30 backdrop-blur-sm border border-emerald-900/50 shadow-lg">
+                <div className="font-medium text-emerald-400 text-center p-5 rounded-xl bg-black/40 backdrop-blur-sm border border-emerald-900/50 shadow-lg">
                   This invoice has been paid. Thank you!
                 </div>
               )}
               {!isPaid && !hasStripe && (
-                <div className="font-medium text-amber-400 text-center p-5 rounded-xl bg-zinc-900/30 backdrop-blur-sm border border-amber-900/50 shadow-lg">
-                  Please contact {fromName} to arrange payment.
+                <div className="space-y-4">
+                  <div className="font-medium text-amber-400 text-center p-5 rounded-xl bg-black/40 backdrop-blur-sm border border-amber-900/50 shadow-lg">
+                    Please contact {fromName} to arrange payment.
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(mailtoLink, '_blank')}
+                    className="w-full border-zinc-800 hover:bg-zinc-800/50 text-zinc-400 hover:text-white"
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    Contact About Payment
+                  </Button>
                 </div>
               )}
+              
+              {/* Contact Information */}
+              <div className="mt-6 pt-6 border-t border-zinc-800/50">
+                <p className="text-zinc-500 text-sm text-center">
+                  Questions? Contact {fromName} at{' '}
+                  <a 
+                    href={mailtoLink}
+                    className="text-violet-400 hover:text-violet-300 inline-flex items-center"
+                  >
+                    {invoice.fromEmail}
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                  </a>
+                </p>
+              </div>
             </div>
           </CardFooter>
         </Card>
