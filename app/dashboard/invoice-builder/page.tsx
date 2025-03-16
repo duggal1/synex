@@ -24,7 +24,7 @@ import { FontSelector } from './components/FontSelector';
 import { BorderStyleSelector } from './components/BorderStyleSelector';
 import { LogoPositionSelector } from './components/LogoPositionSelector';
 import { ImageUploader } from './components/ImageUploader';
-import { TemplateSelector } from './components/TemplateSelector';
+
 
 const tableStyleClasses: Record<TableStyle, string> = {
   simple: 'items-table items-table-simple',
