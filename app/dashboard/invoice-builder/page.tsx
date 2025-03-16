@@ -16,7 +16,7 @@ import { SpacingControl } from './components/SpacingControl';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
+
 
 import { Check, Copy, Download, Eye, Info, Plus, Save, Trash } from 'lucide-react';
 import type { InvoiceStyles, InvoiceLayout, TableStyle, StylePresetName } from './types';
