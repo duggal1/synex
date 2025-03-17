@@ -24,6 +24,7 @@ model User {
   stripeSettings StripeSettings?
   subscription   Subscription?
   invoiceCount   Int            @default(0)
+  agentUsage     Int            @default(0)
   customInvoiceTemplate String? @db.Text
 
   createdAt DateTime @default(now())

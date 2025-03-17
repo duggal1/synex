@@ -10,6 +10,8 @@ import { formatCurrency } from "./utils/formatCurrency";
 import Stripe from "stripe";
 import { CurrencyType } from "./types/currency";
 
+const MAX_FREE_INVOICES = 5; // Define constant for max free invoices
+
 export async function onboardUser(prevState: any, formData: FormData) {
   const session = await requireUser();
 
@@ -50,8 +52,8 @@ export async function createInvoice(prevState: any, formData: FormData) {
 
   // Block creation if user has reached limit and isn't subscribed
   const isSubscribed = user.subscription?.status === "ACTIVE";
-  if (!isSubscribed && user.invoiceCount >= 1) {
-    throw new Error("Free invoice limit reached. Please upgrade to create more invoices.");
+  if (!isSubscribed && user.invoiceCount >= MAX_FREE_INVOICES) {
+    throw new Error(`Free invoice limit reached (${MAX_FREE_INVOICES} invoices). Please upgrade to create more invoices.`);
   }
 
   // Convert invoice date string to a Date object.

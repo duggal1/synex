@@ -2,6 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  @property --pos-x {
+    syntax: '<percentage>';
+    initial-value: 11.14%;
+    inherits: false;
+  }
+
+  @property --pos-y {
+    syntax: '<percentage>';
+    initial-value: 140%;
+    inherits: false;
+  }
+
+  @property --spread-x {
+    syntax: '<percentage>';
+    initial-value: 150%;
+    inherits: false;
+  }
+
+  @property --spread-y {
+    syntax: '<percentage>';
+    initial-value: 180.06%;
+    inherits: false;
+  }
+
+  @property --color-1 {
+    syntax: '<color>';
+    initial-value: #000000;
+    inherits: false;
+  }
+
+  @property --color-2 {
+    syntax: '<color>';
+    initial-value: #05012c;
+    inherits: false;
+  }
+
+  @property --color-3 {
+    syntax: '<color>';
+    initial-value: #0c0e75;
+    inherits: false;
+  }
+
+  @property --color-4 {
+    syntax: '<color>';
+    initial-value: #474670;
+    inherits: false;
+  }
+
+  @property --color-5 {
+    syntax: '<color>';
+    initial-value: #393d88;
+    inherits: false;
+  }
+
+  @property --border-angle {
+    syntax: '<angle>';
+    initial-value: 20deg;
+    inherits: true;
+  }
+
+  @property --border-color-1 {
+    syntax: '<color>';
+    initial-value: hsla(247, 75%, 60%, 0.2);
+    inherits: true;
+  }
+
+  @property --border-color-2 {
+    syntax: '<color>';
+    initial-value: hsla(242, 90%, 41%, 0.75);
+    inherits: true;
+  }
+
+  @property --stop-1 {
+    syntax: '<percentage>';
+    initial-value: 37.35%;
+    inherits: false;
+  }
+
+  @property --stop-2 {
+    syntax: '<percentage>';
+    initial-value: 61.36%;
+    inherits: false;
+  }
+
+  @property --stop-3 {
+    syntax: '<percentage>';
+    initial-value: 78.42%;
+    inherits: false;
+  }
+
+  @property --stop-4 {
+    syntax: '<percentage>';
+    initial-value: 89.52%;
+    inherits: false;
+  }
+
+  @property --stop-5 {
+    syntax: '<percentage>';
+    initial-value: 100%;
+    inherits: false;
+  }
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -248,6 +352,102 @@ body {
   [data-sonner-toast][data-type="loading"] [data-icon] {
     @apply text-white;
   }
+
+  .gradient-button {
+    @apply relative appearance-none cursor-pointer;
+    background: radial-gradient(
+      var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y),
+      var(--color-1) var(--stop-1),
+      var(--color-2) var(--stop-2),
+      var(--color-3) var(--stop-3),
+      var(--color-4) var(--stop-4),
+      var(--color-5) var(--stop-5)
+    );
+    transition:
+      --pos-x 0.5s,
+      --pos-y 0.5s,
+      --spread-x 0.5s,
+      --spread-y 0.5s,
+      --color-1 0.5s,
+      --color-2 0.5s,
+      --color-3 0.5s,
+      --color-4 0.5s,
+      --color-5 0.5s,
+      --border-angle 0.5s,
+      --border-color-1 0.5s,
+      --border-color-2 0.5s,
+      --stop-1 0.5s,
+      --stop-2 0.5s,
+      --stop-3 0.5s,
+      --stop-4 0.5s,
+      --stop-5 0.5s;
+  }
+
+  .gradient-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      var(--border-angle),
+      var(--border-color-1),
+      var(--border-color-2)
+    );
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .gradient-button:hover {
+    --pos-x: 0%;
+    --pos-y: 91.51%;
+    --spread-x: 120.24%;
+    --spread-y: 103.18%;
+    --color-1: #0d00ff; /* Changed from #c96287 */
+    --color-2: #1212b0; /* Changed from #c66c64 */
+    --color-3: #1e1b4b; /* Changed from #cc7d23 */
+    --color-4: #020617; /* Changed from #37140a */
+    --color-5: #000;
+    --border-angle: 190deg;
+    --border-color-1: hsla(230, 78%, 90%, 0.1); /* Changed hue to blue */
+    --border-color-2: hsla(230, 75%, 90%, 0.6); /* Changed hue to blue */
+    --stop-1: 0%;
+    --stop-2: 8.8%;
+    --stop-3: 21.44%;
+    --stop-4: 71.34%;
+    --stop-5: 85.76%;
+  }
+
+  .gradient-button-variant {
+    --color-1: #000022;
+    --color-2: #1e40af; /* Changed from #1f3f6d */
+    --color-3: #3b82f6; /* Changed from #469396 */
+    --color-4: #1e1b4b; /* Changed from #f1ffa5 */
+    --border-angle: 200deg;
+    --border-color-1: hsla(230, 75%, 90%, 0.6); /* Changed hue to blue */
+    --border-color-2: hsla(230, 50%, 90%, 0.15); /* Changed hue to blue */
+  }
+
+  .gradient-button-variant:hover {
+    --pos-x: 0%;
+    --pos-y: 95.51%;
+    --spread-x: 110.24%;
+    --spread-y: 110.2%;
+    --color-1: #020617; /* Changed from #000020 */
+    --color-2: #2b3af0; /* Changed from #f1ffa5 */
+    --color-3: #3b82f6; /* Changed from #469396 */
+    --color-4: #1e1b4b; /* Changed from #1f3f6d */
+    --color-5: #000;
+    --stop-1: 0%;
+    --stop-2: 10%;
+    --stop-3: 35.44%;
+    --stop-4: 71.34%;
+    --stop-5: 90.76%;
+    --border-angle: 210deg;
+    --border-color-1: hsla(230, 75%, 90%, 0.2); /* Changed hue to blue */
+    --border-color-2: hsla(230, 50%, 90%, 0.75); /* Changed hue to blue */
+  }
 }
 
 ::selection {
@@ -348,6 +548,45 @@ img, image {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes gradient-fast {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-fast {
+  background-size: 200% auto;
+  animation: gradient-fast 3s linear infinite;
+}
+
+/* Make sure these styles are not overridden */
+.animate-gradient-fast {
+  background-size: 200% auto !important;
+}
+
+.animate-gradient {
+  background-size: 200% 100%;
+  animation: gradient 8s linear infinite;
 }
 
 .animate-fade-in {

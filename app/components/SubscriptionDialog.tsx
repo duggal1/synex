@@ -1,15 +1,16 @@
 "use client";
-
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { ArrowRight, Check, Sparkles, ZapIcon } from "lucide-react";
+import { GradientButton } from "@/components/ui/gradient-button";
+import Link from "next/link";
 
 interface Props {
   isOpen: boolean;
@@ -19,52 +20,62 @@ interface Props {
 
 export function SubscriptionDialog({ isOpen, onClose, freeInvoicesLeft }: Props) {
   const router = useRouter();
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-black border border-neutral-800 rounded-lg">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Upgrade Your Plan</DialogTitle>
-          <DialogDescription className="text-lg pt-2">
-            {freeInvoicesLeft === 0 
-              ? "You've reached your free invoice limit (1 invoice)."
-              : `You have ${freeInvoicesLeft} free invoice${freeInvoicesLeft !== 1 ? 's' : ''} remaining.`
-            }
-          </DialogDescription>
-        </DialogHeader>
-        <div className="my-4">
-          <p className="text-muted-foreground">
-            Upgrade to our premium plan to create unlimited invoices and access
-            more features.
-          </p>
-          <ul className="mt-4 space-y-2">
-            <li className="flex items-center gap-2">
-              ✓ Unlimited Invoices
-            </li>
-            <li className="flex items-center gap-2">
-              ✓ Premium Templates
-            </li>
-            <li className="flex items-center gap-2">
-              ✓ Advanced Analytics
-            </li>
-          </ul>
-        </div>
-        <DialogFooter className="flex gap-2 sm:justify-start">
-          <Button
-            variant="default"
-            className="flex-1"
-            onClick={() => router.push("/dashboard/upgrade")}
-          >
+          <DialogTitle className="text-2xl font-medium text-white">
             Upgrade Now
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={onClose}
-          >
-            Maybe Later
-          </Button>
-        </DialogFooter>
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="mt-4 space-y-6">
+          {/* Usage Alert */}
+          <div className="bg-blue-950/20 p-3 rounded-md border border-blue-900/50">
+            <p className="text-sm text-blue-100">
+              {freeInvoicesLeft === 0
+                ? "You've reached your free invoice limit (5 invoices)."
+                : `You have ${freeInvoicesLeft} free invoice${freeInvoicesLeft !== 1 ? 's' : ''} remaining.`
+              }
+            </p>
+          </div>
+          
+          {/* Features Grid */}
+          <div className="grid gap-3">
+            {[
+              "Unlimited Invoices",
+              "Premium Templates",
+              "Advanced Analytics",
+              "AI-Powered Insights",
+              "Priority Support",
+              "Custom Branding"
+            ].map((feature, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-blue-500" />
+                <span className="text-sm text-neutral-300">{feature}</span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-3 pt-2">
+          <Link href={"/dashboard/upgrade"}>
+
+      <GradientButton className=" mt-6" >
+        <ZapIcon className="text-neutral-200">
+          </ZapIcon>
+          Upgrade Now</GradientButton>
+     </Link>
+            
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="text-neutral-400 hover:text-neutral-300"
+            >
+              Maybe Later
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -66,13 +66,13 @@ export function CreateInvoice({
 
   useEffect(() => {
     // Show dialog if user hits limit and isn't subscribed
-    if (invoiceCount >= 1 && !isSubscribed) {
+    if (invoiceCount >= 5 && !isSubscribed) {
       setShowSubscriptionDialog(true);
     }
   }, [invoiceCount, isSubscribed]);
 
   const handleSubmit = (e: React.FormEvent) => {
-    if (invoiceCount >= 1 && !isSubscribed) {
+    if (invoiceCount >= 5 && !isSubscribed) {
       e.preventDefault();
       setShowSubscriptionDialog(true);
       return;

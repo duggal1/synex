@@ -20,6 +20,8 @@ import prisma from "../utils/db";
 import { redirect } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "../components/SessionProvider";
+import { UsageProgress } from "../components/UsageProgress";
+import { ExtendedUser } from "../types";
 
 async function getUser(userId: string) {
   const data = await prisma.user.findUnique({
@@ -30,12 +32,25 @@ async function getUser(userId: string) {
       firstName: true,
       lastName: true,
       address: true,
+      email: true,
+      invoiceCount: true,
+      subscription: {
+        select: {
+          status: true,
+          planType: true
+        }
+      }
     },
   });
 
   if (!data?.firstName || !data.lastName || !data.address) {
     redirect("/onboarding");
   }
+
+  return {
+    ...data,
+    isSubscribed: data.subscription?.status === "ACTIVE"
+  } as ExtendedUser;
 }
 
 export default async function DashboardLayout({
@@ -44,12 +59,13 @@ export default async function DashboardLayout({
   children: ReactNode;
 }) {
   const session = await requireUser();
-  const data = await getUser(session.user?.id as string);
+  const user = await getUser(session.user?.id as string);
+
   return (
     <SessionProvider>
       <div className="grid lg:grid-cols-[280px_1fr] w-full min-h-screen md:gird-cols-[220px_1fr]">
-        <div className="hidden md:block bg-muted/40 border-r">
-          <div className="flex flex-col gap-2 h-full max-h-screen">
+        <div className="hidden md:block bg-muted/40 border-r relative">
+          <div className="flex flex-col h-full">
             <div className="flex items-center px-4 lg:px-6 border-b h-14 lg:h-[60px]">
               <Link href="/" className="flex items-center gap-2">
                 <Image src={Logo} alt="Logo" className="size-7" />
@@ -60,9 +76,13 @@ export default async function DashboardLayout({
                 </span>
               </Link>
             </div>
-            <div className="flex-1">
-              <nav className="items-start grid px-2 lg:px-4 font-medium text-sm">
-                <DashboardLinks />
+            <div className="flex-1 flex flex-col min-h-0">
+              <nav className="flex-1 px-2 lg:px-4 font-medium text-sm h-full">
+                <DashboardLinks 
+                  invoiceCount={user.invoiceCount || 0}
+                  maxInvoices={user.isSubscribed ? Infinity : 5}
+                  isSubscribed={user.isSubscribed}
+                />
               </nav>
             </div>
           </div>
@@ -121,6 +141,8 @@ export default async function DashboardLayout({
                   </DropdownMenuItem>
                  
                   <DropdownMenuSeparator />
+                
+
                   <DropdownMenuItem asChild>
                     <form
                       className="w-full"
@@ -134,8 +156,10 @@ export default async function DashboardLayout({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
             </div>
           </header>
+         
           <main className="flex flex-col flex-1 gap-4 lg:gap-6 p-4 lg:p-6">
             {children}
           </main>
