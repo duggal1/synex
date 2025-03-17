@@ -448,6 +448,37 @@ body {
     --border-color-1: hsla(230, 75%, 90%, 0.2); /* Changed hue to blue */
     --border-color-2: hsla(230, 50%, 90%, 0.75); /* Changed hue to blue */
   }
+
+  @keyframes gradient-animation {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .gradient-shine {
+    background: linear-gradient(
+      110deg,
+      #0040ff 0%,
+      #160f94 25%,
+      #3f37cc 50%,
+      #7c01ff 75%,
+      #cc23e6 100%
+    );
+    background-size: 200% 100%;
+    animation: gradient-animation 3s linear infinite;
+    transition: all 0.3s ease;
+  }
+
+  .gradient-shine:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -10px rgba(1, 65, 255, 0.5);
+  }
 }
 
 ::selection {
@@ -572,6 +603,19 @@ img, image {
   100% {
     background-position: 0% 50%;
   }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
 }
 
 .animate-gradient-fast {
@@ -735,4 +779,40 @@ img, image {
 @page {
   size: A4;
   margin: 0.6cm;
+}
+
+@keyframes gradient-shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.animate-gradient-shine {
+  animation: gradient-shine 8s linear infinite;
+  background-size: 200% auto;
+}
+
+.animate-gradient {
+  background: linear-gradient(
+    to right,
+    rgb(56, 89, 255),
+    rgb(88, 51, 255),
+    rgb(120, 60, 220),
+    rgb(56, 89, 255)
+  );
+  background-size: 300% 100%;
+  animation: gradient 8s linear infinite;
+}
+
+/* Updated gradient animation */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }

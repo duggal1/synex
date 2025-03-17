@@ -78,6 +78,9 @@ export default {
           ring: 'hsl(var(--sidebar-ring))'
         }
   		},
+      backgroundImage: {
+        'gradient-rainbow': 'linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet)',
+      },
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -91,7 +94,8 @@ export default {
         'marquee-reverse': 'marquee-reverse 25s linear infinite',
         'marquee-vertical': 'marquee-vertical 25s linear infinite',
         'shine': 'shine var(--duration) infinite linear',
-        'grid': 'grid 15s linear infinite'
+        'grid': 'grid 15s linear infinite',
+        'gradient-move': 'gradientShift 10s linear infinite',
   		},
   		keyframes: {
   			rainbow: {
@@ -130,6 +134,10 @@ export default {
         grid: {
           '0%': { transform: 'translateY(-50%)' },
           '100%': { transform: 'translateY(0)' }
+        },
+        gradientShift: {
+          '0%': { 'background-position': '0%' },
+          '100%': { 'background-position': '100%' },
         }
   		}
   	}

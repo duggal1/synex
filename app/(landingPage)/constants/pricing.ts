@@ -1,9 +1,9 @@
-type PLAN = {
+export type PLAN = {
     id: string;
     title: string;
     desc: string;
     monthlyPrice: number;
-    yearlyPrice: number;
+    annuallyPrice: number;
     badge?: string;
     buttonText: string;
     features: string[];
@@ -14,51 +14,57 @@ export const PLANS: PLAN[] = [
     {
         id: "free",
         title: "Free",
-        desc: "Get started with AI-powered invoicing at zero cost.",
+        desc: "Basic invoice management features for individuals.",
         monthlyPrice: 0,
-        yearlyPrice: 0,
-        buttonText: "Start for Free",
+        annuallyPrice: 0,
+        buttonText: "Get Started",
         features: [
             "Up to 5 invoices per month",
             "Limited Magnetic AI automation",
             "Basic invoice builder",
             "Standard email support",
-            "Basic data insights"
+            "Basic data insights",
+            "Invoice tracking",
+            "PDF invoice generation"
         ],
-        link: ""
+        link: "https://synexai.in/dashboard/upgrade"
     },
     {
-        id: "pro",
-        title: "Pro",
-        desc: "For businesses needing full automation and efficiency.",
+        id: "",
+        title: "Standard",
+        desc: "Ideal for growing businesses and agencies who need advanced invoice management capabilities.",
         monthlyPrice: 19,
-        yearlyPrice: 190,
+        annuallyPrice: 136.4,
+        badge: "Most Popular",
         buttonText: "Upgrade to Pro",
         features: [
+            "Everything in Free",
             "Unlimited invoices",
-            "Full Magnetic AI automation",
-            "Advanced invoice builder",
+            "Full Agentic AI automation",
             "Automated email reminders",
             "AI-powered data extraction",
-            "Priority email support"
+            "Customizable invoice templates",
+            "Payment processing integration"
         ],
-        link: ""
+   link: "https://synexai.in/dashboard/upgrade"
     },
     {
         id: "enterprise",
         title: "Enterprise",
-        desc: "Custom solutions for large-scale invoicing automation.",
+        desc: "Full-scale invoice management solution for large organizations.",
         monthlyPrice: 49,
-        yearlyPrice: 490,
+        annuallyPrice: 294,
+        badge: "Custom AI Solutions",
         buttonText: "Contact Sales",
         features: [
-            "Everything in Pro",
+            "Everything in Mastermind",
             "Custom AI automation rules",
             "Bulk invoice processing",
-            "Team collaboration tools",
             "Dedicated account manager",
-            "API access & custom integrations"
+            "API access & custom integrations",
+            "Enhanced security features",
+            "24/7 dedicated support"
         ],
-        link: ""
+        link: "https://synexai.in/dashboard/upgrade"
     }
 ];

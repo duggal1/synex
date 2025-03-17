@@ -1,199 +1,153 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { cn } from "@/lib";
+import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckIcon } from "lucide-react";
-import Link from "next/link";
-import SectionBadge from "./ui/section-badge";
-import { Button } from "@/components/ui/button";
-import NumberTicker from "./number-ticker";
+import { useState } from "react";
 import Container from "./contanier";
-import { PLANS } from "../constants/pricing";
-import { cn } from "@/lib";
+import { Button } from "./ui/button";
+import { PLAN, PLANS } from "../constants/pricing";
+import Link from "next/link";
 
-
-
-type Plan = "monthly" | "yearly";
+type Plan = "monthly" | "annually";
 
 const Pricing = () => {
-    return (
-        <div className="flex flex-col items-center justify-center py-12 md:py-16 lg:py-32 w-full relative">
-      
-        <Container
-        
-      
-        
-        >
-            <div className="flex flex-col items-center text-center max-w-xl mx-auto">
-                <SectionBadge title="Recruitment Plans" />
-                <h2 className="text-2xl md:text-4xl lg:text-5xl font-black !leading-snug mt-6 bg-gradient-to-r from-blue-400 via-violet-400 to-blue-500 bg-clip-text text-transparent">
-                    Choose Your Hiring Power
-                </h2>
-                <p className="text-base md:text-lg text-center text-accent-foreground/80 mt-6">
-                    Start with verified candidates today. Scale as you grow.
-                </p>
-            </div>
-        </Container>
-       
-            <div className="mt-8 w-full relative flex flex-col items-center justify-center">
-                <div className="absolute hidden lg:block top-1/2 right-2/3 translate-x-1/4 -translate-y-1/2 w-96 h-96 bg-primary/15 blur-[10rem] -z-10"></div>
-                <div className="absolute hidden lg:block top-1/2 left-2/3 -translate-x-1/4 -translate-y-1/2 w-96 h-96 bg-violet-500/15 blur-[10rem] -z-10"></div>
-                <Container>
-                    <Tabs defaultValue="monthly" className="w-full flex flex-col items-center justify-center">
-                        <TabsList>
-                            <TabsTrigger value="monthly">
-                                Monthly
-                            </TabsTrigger>
-                            <TabsTrigger value="yearly">
-                                Yearly
-                            </TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="monthly">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mt-14">
-                                {PLANS.map((plan, index) => (
-                                    <Plan
-                                        key={index}
-                                        index={index}
-                                        {...plan}
-                                        plan="monthly"
-                                    />
-                                ))}
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="yearly">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mt-14">
-                                {PLANS.map((plan, index) => (
-                                    <Plan
-                                        key={index}
-                                        index={index}
-                                        {...plan}
-                                        plan="yearly"
-                                    />
-                                ))}
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </Container>
-            </div>
-        </div>
-    )
-};
 
-const Plan = ({
-    id,
-    title,
-    desc,
-    monthlyPrice,
-    yearlyPrice,
-    buttonText,
-    features,
-    index,
-    plan,
-}: {
-    id: string;
-    title: string;
-    desc: string;
-    monthlyPrice: number;
-    yearlyPrice: number;
-    buttonText: string;
-    features: string[];
-    index: number;
-    plan: Plan;
-}) => {
+    const [billPlan, setBillPlan] = useState<Plan>("monthly");
 
-    const getDisplayedPrice = (plan: string, monthlyPrice: number, yearlyPrice: number) => {
-        if (plan === "monthly") {
-            return monthlyPrice === 0 ? 0 : monthlyPrice;
-        } else if (plan === "yearly") {
-            const discountedPrice = Math.round((yearlyPrice * 0.8) / 12);
-            return yearlyPrice === 0 ? 0 : discountedPrice;
-        }
-        return 0;
+    const handleSwitch = () => {
+        setBillPlan((prev) => (prev === "monthly" ? "annually" : "monthly"));
     };
 
-    const displayedPrice = getDisplayedPrice(plan, monthlyPrice, yearlyPrice);
-
     return (
-        <div key={index} className="w-full relative flex flex-col saturate-150 rounded-2xl group hover:scale-[1.02] transition-all duration-500">
-            <div className="absolute inset-0 bg-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
-            <div
-                className={cn(
-                    "flex flex-col size-full border rounded-2xl relative p-3",
-                    "bg-gradient-to-br from-background/95 to-background/90 backdrop-blur-xl",
-                    "border-blue-950/20 hover:border-violet-500/30",
-                    "transition-all duration-500",
-                    id === "pro" ? "border-violet-500/50" : "border-border/60",
-                )}
-            >
-                {id === "pro" && (
-                    <div className="max-w-fit min-w-min inline-flex items-center whitespace-nowrap px-1 h-7 rounded-full bg-gradient-to-r from-blue-500 to-violet-500 absolute -top-3 left-1/2 -translate-x-1/2 select-none">
-                        <span className="flex-1 text-sm px-2 font-medium text-white animate-shimmer">
-                            Most Popular
-                        </span>
-                    </div>
-                )}
-                <div className="flex flex-col p-3 w-full">
-                    <h2 className="text-xl font-medium">
-                        {title}
-                    </h2>
-                    <p className="text-sm mt-2 text-muted-foreground break-words">
-                        {desc}
-                    </p>
-                </div>
-                <hr className="shrink-0 border-none w-full h-px bg-border" role="separator" />
-                <div className="relative flex flex-col flex-1 align-top w-full p-3 h-full break-words text-left gap-4">
-                    <div className="flex items-end gap-2">
-                        <div className="flex items-end gap-1 w-40">
-                            <span className="text-2xl md:text-2xl font-black">
-                                ${displayedPrice === 0 ? 0 : <NumberTicker value={displayedPrice} />}
-                            </span>
-                            {/* In here 120 * 0.8 = 96 and /12 to get monthly price */}
-                            <span className="text-md text-muted-foreground font-medium font-headin">
-                                per {plan === "monthly" ? "month" : "month"}
-                            </span>
-                        </div>
-                        <AnimatePresence>
-                            {(id !== "free" && plan === "yearly") && (
-                                <motion.span
-                                    initial={{ opacity: 0, scale: 0 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    aria-hidden="true"
-                                    className="text-xs px-2 py-0.5 rounded mb-1 text-foreground bg-primary font-medium"
-                                >
-                                    -20%
-                                </motion.span>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                    <ul className="flex flex-col gap-2">
-                        {features.map((feature, index) => (
-                            <li key={index} className="flex items-center gap-2">
-                                <CheckIcon aria-hidden="true" className="w-5 h-5 text-primary" />
-                                <p className="text-sm md:text-base text-muted-foreground">
-                                    {feature}
-                                </p>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-                <div className="p-3 mt- h-auto flex w-full items-center">
-                    <Button
-                        asChild
-                        variant={id === "pro" ? "default" : "destructive"}
-                        className="w-full hover:scale-100 hover:translate-y-0 shadow-none"
-                    >
+        <div className="relative flex flex-col items-center justify-center max-w-5xl py-20 mx-auto">
 
-                        <Link href={""}>
-                            {buttonText}
-                        </Link>
-                    </Button>
-                </div>
+            <div className="flex flex-col items-center justify-center max-w-2xl mx-auto">
+                <Container>
+                    <div className="flex flex-col items-center text-center max-w-2xl mx-auto">
+                        <h1 className="text-3xl md:text-5xl lg:text-5xl font-heading font-black !leading-snug mt-6">
+                            Find the right plan to simplify 
+                            <br/> your invoicing.
+                            </h1>
+                        <p className="text-base md:text-lg text-center text-accent-foreground/80 mt-6">
+                            Automate your invoice management with AI-powered efficiency. Generate invoices faster, reduce manual work, and get paid on time effortlessly.
+                        </p>
+                    </div>
+                </Container>
+
+                <Container delay={0.4}>
+                    <div className="flex items-center justify-center space-x-4 mt-6">
+                        <span className="text-base font-medium">Monthly</span>
+                        <button onClick={handleSwitch} className="relative rounded-full focus:outline-none">
+                            <div className="w-12 h-6 transition rounded-full shadow-md outline-none bg-blue-500"></div>
+                            <div
+                                className={cn(
+                                    "absolute inline-flex items-center justify-center w-4 h-4 transition-all duration-500 ease-in-out top-1 left-1 rounded-full bg-white",
+                                    billPlan === "annually" ? "translate-x-6" : "translate-x-0"
+                                )}
+                            />
+                        </button>
+                        <span className="text-base font-medium">Annually</span>
+                    </div>
+                </Container>
+            </div>
+
+            <div className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-8 lg:pt-12 gap-4 lg:gap-6 max-w-6xl mx-auto">
+                {PLANS.map((plan, idx) => (
+                    <Container key={idx} delay={0.1 * idx + 0.2}>
+                        <Plan key={plan.id} plan={plan} billPlan={billPlan} />
+                    </Container>
+                ))}
             </div>
         </div>
-    )
+    );
 };
 
-export default Pricing
+const Plan = ({ plan, billPlan }: { plan: PLAN, billPlan: Plan }) => {
+    return (
+        <div className={cn(
+            "flex flex-col relative rounded-2xl lg:rounded-3xl transition-all bg-background/80 backdrop-blur-sm items-start w-full border border-foreground/10 overflow-hidden min-h-full",
+            plan.title === "Mastermind" && "border-blue-500"
+        )}>
+            {plan.title === "Mastermind" && (
+                <div className="absolute top-1/2 inset-x-0 mx-auto h-12 -rotate-45 w-full bg-blue-600 rounded-2xl lg:rounded-3xl blur-[8rem] -z-10"></div>
+            )}
+
+            <div className="p-4 md:p-8 flex rounded-t-2xl lg:rounded-t-3xl flex-col items-start w-full relative">
+                <h2 className="font-black text-2xl text-foreground pt-5">
+                    {plan.title}
+                </h2>
+                <h3 className="mt-3 text-4xl font-black md:text-6xl">
+                    <NumberFlow
+                        value={billPlan === "monthly" ? plan.monthlyPrice : plan.annuallyPrice}
+                        suffix={billPlan === "monthly" ? "/mo" : "/yr"}
+                        format={{
+                            currency: "USD",
+                            style: "currency",
+                            currencySign: "standard",
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0,
+                            currencyDisplay: "narrowSymbol"
+                        }}
+                    />
+                </h3>
+                <p className="text-sm md:text-base text-muted-foreground mt-2 font-medium">
+                    {plan.desc}
+                </p>
+            </div>
+            <div className="flex flex-col items-start w-full px-4 py-2 md:px-8 flex-grow">
+                {plan.title === "Standard" ? (
+                    <Link href={plan.link} className="w-full">
+                        <button className="w-full py-3 px-4 rounded-full font-bold relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-pink-600 to-blue-600 bg-size-200 animate-gradient-x"></div>
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-white backdrop-blur-sm rounded-full"></div>
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-600 to-fuchsia-700 rounded-full blur opacity-0 group-hover:opacity-75 transition duration-300 group-hover:animate-pulse"></div>
+                            <span className="relative z-10 text-white">{plan.buttonText}</span>
+                        </button>
+                    </Link>
+                ) : (
+                    <Link href={plan.link} className="w-full">
+                        <Button size="lg" variant="secondary" className="w-full font-black">
+                            {plan.buttonText}
+                        </Button>
+                    </Link>
+                )}
+                
+                <div className="h-8 overflow-hidden w-full mx-auto">
+                    <AnimatePresence mode="wait">
+                        <motion.span
+                            key={billPlan}
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -20, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="text-sm text-center text-muted-foreground mt-3 mx-auto block"
+                        >
+                            {billPlan === "monthly" ? (
+                                "Billed monthly"
+                            ) : (
+                                "Billed in one annual payment"
+                            )}
+                        </motion.span>
+                    </AnimatePresence>
+                </div>
+            </div>
+            <div className="flex flex-col items-start w-full p-5 mb-4 ml-1 gap-y-2 flex-grow">
+                <span className="text-base text-left mb-2 font-black">
+                    Includes: 
+                </span>
+                {plan.features.map((feature, index) => (
+                    <div key={index} className="flex items-center justify-start gap-2">
+                        <div className="flex items-center justify-center">
+                            <CheckIcon className="size-5 text-blue-500" />
+                        </div>
+                        <span className="font-medium">{feature}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default Pricing;
