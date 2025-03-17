@@ -21,11 +21,13 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-   import Image from "next/image";
+import { useAvatar } from "@/app/hooks/use-avatar";
+import Image from "next/image";
+import { GradientButton } from "@/components/ui/gradient-button";
 
 const Navbar = () => {
     const { data: session, status } = useSession();
+    const avatarUrl = useAvatar();
     const isAuthenticated = status === "authenticated";
     const isLoading = status === "loading";
 
@@ -114,16 +116,14 @@ const Navbar = () => {
                             ) : isAuthenticated ? (
                                 <>
                                     <Link href="/dashboard">
-                                        <Button variant="default" className="bg-gradient-to-r from-blue-600 hover:from-blue-800 to-violet-600 hover:to-violet-700 rounded-full transition-all duration-300">
-                                            Dashboard
-                                        </Button>
+                                      <GradientButton> Dashboard</GradientButton>
                                     </Link>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Avatar className="border-2 border-violet-600 hover:border-violet-800 w-9 h-9 transition-all duration-300 cursor-pointer">
-                                                <AvatarImage src={session?.user?.image || ""} />
+                                            <Avatar className="border-2 border-zinc-600 hover:border-zinc-300 w-9 h-9 transition-all duration-300 cursor-pointer">
+                                                <AvatarImage src={avatarUrl} alt="Profile"  />
                                                 <AvatarFallback className="bg-indigo-600 text-white">
-                                                    {session?.user?.name?.charAt(1) || <User className="w-4 h-4" />}
+                                                    {session?.user?.name?.charAt(0) || <User className="w-4 h-4" />}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </DropdownMenuTrigger>
@@ -207,7 +207,7 @@ const Navbar = () => {
                                     <div className="bg-accent/30 rounded-full w-20 h-8 animate-pulse"></div>
                                 ) : isAuthenticated ? (
                                     <Avatar className="border-2 border-indigo-600 w-8 h-8 cursor-pointer">
-                                        <AvatarImage src={session?.user?.image || ""} />
+                                        <AvatarImage src={avatarUrl} alt="Profile" />
                                         <AvatarFallback className="bg-indigo-600 text-white">
                                             {session?.user?.name?.charAt(0) || <User className="w-3 h-3" />}
                                         </AvatarFallback>

@@ -93,7 +93,7 @@ export function UsageProgress({
           <span className={cn(
             "font-medium text-sm",
             isCriticallyLow 
-              ? "text-red-400" 
+              ? "text-red-400 " 
               : isLowOnInvoices 
                 ? "text-amber-400" 
                 : "text-neutral-300"
@@ -112,7 +112,7 @@ export function UsageProgress({
             ? "from-rose-500 via-red-500 to-rose-500 animate-gradient-fast"
             : isLowOnInvoices
             ? "from-amber-400 via-orange-500 to-amber-400 animate-gradient-fast"
-            : "from-blue-600 via-violet-500 to-blue-500 animate-gradient-fast"
+            : "from-blue-600 via-pink-600 to-blue-500 animate-gradient-fast"
         )}
       />
     </div>
