@@ -31,7 +31,7 @@ const FAQ = () => {
 
                 <AnimationContainer animation="fadeUp" delay={0.4}>
                     <p className="mx-auto max-w-2xl font-medium text-neutral-400 text-sm md:text-base tracking-wide">
-                        Find answers to common questions about PropEase and discover how we can help streamline your property management
+                       Find answers to common questions about SynexAI and discover how we can help automate your invoices with our advanced agnetic system.
                     </p>
                 </AnimationContainer>
             </div>
